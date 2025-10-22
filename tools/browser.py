@@ -94,8 +94,14 @@ def screenshot(path: Optional[str] = None, full_page: bool = True) -> Dict[str, 
     if not path:
         fd, tmp = tempfile.mkstemp(prefix="browser_", suffix=".png")
         os.close(fd); path = tmp
+    # Enforce ASCII-only on the final filename component
+    try:
+        from core.pathutil import sanitize_save_path
+        path, sanitized = sanitize_save_path(path)
+    except Exception:
+        sanitized = False
     _page.screenshot(path=path, full_page=full_page)
-    return {"ok": True, "path": path, "full_page": full_page}
+    return {"ok": True, "path": path, "full_page": full_page, "sanitized": sanitized}
 
 def close() -> Dict[str, Any]:
     global _pw, _browser, _context, _page, _owner_tid

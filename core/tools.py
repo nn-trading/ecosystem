@@ -81,6 +81,8 @@ for _m in (
     "tools.winui",
     "tools.fs",
     "tools.memutil",
+    "tools.powershell",
+    "tools.python_exec",
 ):
     _safe_register(_m)
 

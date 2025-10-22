@@ -43,7 +43,7 @@ class AssistantLoader:
         self.cfg = _read_json(ASSISTANT_CONFIG_PATH)
         self.log_dir = self.cfg.get("log_dir") or r"C:\\bots\\assistant\\logs"
         self.art_dir = self.cfg.get("artifacts") or r"C:\\bots\\assistant\\artifacts"
-        self.db_path = self.cfg.get("memory_db") or r"C:\\bots\\assistant\\memory.db"
+        self.db_path = os.environ.get("ECOSYS_MEMORY_DB", self.cfg.get("memory_db") or r"C:\\bots\\data\\memory.db")
         self.last_session = self.cfg.get("last_session") or ""
         self.assistant_jsonl = os.path.join(self.log_dir, "assistant.jsonl")
         self.tasks_json = os.path.join(self.log_dir, "tasks.json")

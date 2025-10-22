@@ -1,6 +1,7 @@
 from __future__ import annotations
 from typing import Optional, List
 import os
+from core.pathutil import sanitize_save_path
 
 try:
     from mss import mss
@@ -46,7 +47,9 @@ def capture(path: str, region: Optional[List[int]] = None) -> dict:
                 shot = sct.grab(sct.monitors[0])
 
             img = Image.frombytes("RGB", shot.size, shot.bgra, "raw", "BGRX")
+            # Sanitize final filename to enforce ASCII-only
+            p, sanitized = sanitize_save_path(p)
             img.save(p)
-            return {"ok": True, "path": p, "width": shot.width, "height": shot.height}
+            return {"ok": True, "path": p, "width": shot.width, "height": shot.height, "sanitized": sanitized}
     except Exception as e:
         return {"ok": False, "error": str(e)}

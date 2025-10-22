@@ -34,7 +34,7 @@ def _append_assistant_jsonl(obj: dict):
             line = json.dumps(obj, ensure_ascii=False) + "\n"
             f.write(line)
             try:
-                db = cfg.get("memory_db") or r"C:\\bots\\assistant\\memory.db"
+                db = os.environ.get("ECOSYS_MEMORY_DB", cfg.get("memory_db") or r"C:\\bots\\data\\memory.db")
                 con = sqlite3.connect(db)
                 cur = con.cursor()
                 cur.execute("CREATE TABLE IF NOT EXISTS kv (key TEXT PRIMARY KEY, value TEXT)")
@@ -51,7 +51,7 @@ def _append_assistant_jsonl(obj: dict):
 from core.bus import EventBus
 from core.llm_client import LLMClient
 from core.tools import REGISTRY as ToolsRegistry   # << use the SINGLETON
-from core.memory import Memory
+from core.memory import Memory, DEFAULT_KEEP_LAST
 from core.assistant_loader import AssistantLoader
 
 # --- Agents ---
@@ -97,6 +97,18 @@ async def summary_printer(bus: EventBus):
                 safe = "".join(ch for ch in txt if ord(ch) < 128)
             if safe:
                 print(f"AI: [Summary] {safe}")
+
+async def bus_recorder(bus: EventBus, memory: Memory):
+    """
+    Record every bus event immediately to Memory (events.jsonl).
+    This ensures we capture every action right after it occurs.
+    """
+    async for env in bus.subscribe_prefix(""):
+        try:
+            await memory.append_event(env.topic, env.payload, sender=env.sender, job_id=env.job_id)
+        except Exception:
+            # Never crash recorder; best-effort logging only
+            pass
 
 def _watch_task(label: str, task: asyncio.Task):
     def _cb(t: asyncio.Task):
@@ -227,6 +239,24 @@ async def main():
 
     await asyncio.sleep(0)
 
+    # Start a recorder that logs every bus event to memory
+    rec_task = asyncio.create_task(bus_recorder(bus, memory), name="bus_recorder")
+    _watch_task("bus_recorder", rec_task)
+
+    # Periodic rotation to keep events.jsonl bounded
+    async def _rotate_loop():
+        while True:
+            try:
+                await asyncio.sleep(int(os.environ.get("MEM_ROTATE_SEC", "60")))
+                await memory.rotate_keep_last(DEFAULT_KEEP_LAST)
+            except asyncio.CancelledError:
+                break
+            except Exception:
+                # never crash
+                await asyncio.sleep(60)
+    rot_task = asyncio.create_task(_rotate_loop(), name="mem_rotate_loop")
+    _watch_task("mem_rotate_loop", rot_task)
+
     # Start agents
     agents = [
         CommsAgent("AI-1:Comms", bus, llm, memory, tools),
@@ -249,9 +279,9 @@ async def main():
     try:
         await input_loop(bus, llm, tools, memory)
     finally:
-        for t in agent_tasks + ui_tasks:
+        for t in agent_tasks + ui_tasks + [rec_task, rot_task]:
             t.cancel()
-        await asyncio.gather(*agent_tasks, *ui_tasks, return_exceptions=True)
+        await asyncio.gather(*agent_tasks, *ui_tasks, rec_task, rot_task, return_exceptions=True)
 
 
 if __name__ == "__main__":

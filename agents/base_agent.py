@@ -10,8 +10,5 @@ class BaseAgent:
         self.tools = tools
 
     async def say(self, text: str, *, job_id: Optional[str] = None):
-        try:
-            self.memory.append("assistant", f"{self.name}: {text}")
-        except Exception:
-            pass
+        # Memory has no generic append(); bus_recorder will capture this ui/print event.
         await self.bus.publish("ui/print", {"text": f"{self.name}: {text}"}, sender=self.name, job_id=job_id)
