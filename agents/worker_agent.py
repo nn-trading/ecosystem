@@ -15,40 +15,6 @@ def _truncate(obj: Any, limit: int = 300) -> str:
         s = str(obj)
     return s if len(s) <= limit else s[:limit] + "..."
 
-def _format_weather_summary(res: Dict[str, Any]) -> Optional[str]:
-    """
-    Build a one-line human summary if result looks like weather.current output.
-    """
-    if not isinstance(res, dict) or not res.get("ok"):
-        return None
-    resolved = res.get("resolved") or {}
-    current  = res.get("current") or {}
-    if not (resolved and current):
-        return None
-
-    name    = resolved.get("name") or "Location"
-    admin1  = resolved.get("admin1")
-    country = resolved.get("country")
-    place = name
-    if admin1 and country:
-        place = f"{name}, {admin1}, {country}"
-    elif country:
-        place = f"{name}, {country}"
-
-    t    = current.get("time")
-    temp = current.get("temperature_c")
-    wind = current.get("windspeed_kmh")
-    code = current.get("weathercode")
-
-    bits: List[str] = []
-    if t: bits.append(str(t))
-    if temp is not None: bits.append(f"{temp} C")
-    if wind is not None: bits.append(f"wind {wind} km/h")
-    if code is not None: bits.append(f"code {code}")
-
-    tail = ", ".join(bits) if bits else ""
-    return f"Weather @ {place}{(' - ' + tail) if tail else ''}"
-
 # ---------- worker agent ----------
 
 class WorkerAgent(BaseAgent):
@@ -134,11 +100,7 @@ class WorkerAgent(BaseAgent):
                         error_text = (result or {}).get("error") or "tool reported failure"
                         break
 
-                    # Domain summary (weather)
-                    if human_note is None:
-                        w = _format_weather_summary(result)
-                        if w:
-                            human_note = w
+                    # No domain-specific summary; keep generic note based on last_result later
                 else:
                     await self.bus.publish(
                         "ui/print",

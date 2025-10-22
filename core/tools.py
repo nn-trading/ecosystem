@@ -65,7 +65,6 @@ for _m in (
     "tools.winui",
     "tools.fs",
     "tools.memutil",
-    "tools.weather",
 ):
     _safe_register(_m)
 
