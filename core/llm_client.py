@@ -113,7 +113,7 @@ class LLMClient:
             actiony = [
                 "zip","unzip","create","write","read","append","copy","move","delete",
                 "run","shell","powershell","search","grep","screenshot","install","pip",
-                "weather","http","web","fetch","download","open url","browse","calculate","translate"
+                "http","web","fetch","download","open url","browse","calculate","translate"
             ]
             if any(k in text for k in actiony) or text.endswith("?"):
                 # Questions default to TASK in offline mode so we actually try to do something.

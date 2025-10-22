@@ -88,7 +88,7 @@ def _heuristic_summary(lines: List[str], max_chars: int) -> str:
 
         # crude signals for tool/run lines and PASS/FAIL from tester/worker logs
         f = frag.lower()
-        if any(key in f for key in ("fs.", "zip.", "scr.", "shell.run", "ps.run", "weather.current", "web.http_get", "web.get_json", "find.grep")):
+        if any(key in f for key in ("fs.", "zip.", "scr.", "shell.run", "ps.run", "web.http_get", "web.get_json", "find.grep")):
             tool_calls.append(frag[:200])
         if "[tester]" in ln.lower() or "pass" in f or "fail" in f:
             if "pass" in f:
