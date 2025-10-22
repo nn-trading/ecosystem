@@ -37,10 +37,3 @@ def register(tools) -> None:
     tools.add("mem.stats", stats, desc="EventLog stats")
     tools.add("mem.rollup", rollup, desc="Roll up EventLog older entries")
     tools.add("mem.search", search, desc="Search EventLog (FTS if available)")
-
-# Tool registration for ToolsRegistry
-
-def register(tools) -> None:
-    tools.add("mem.stats", stats, desc="EventLog stats")
-    tools.add("mem.rollup", rollup, desc="Roll up EventLog older entries")
-    tools.add("mem.search", search, desc="Search EventLog (FTS if available)")
