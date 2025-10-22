@@ -4,6 +4,7 @@ import os, sys, json, time, subprocess, shlex
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 
 from core.memory import Memory
+from memory.eventlog import EventLog
 
 
 def main():
@@ -48,6 +49,13 @@ def main():
     # Log before printing to avoid output buffering issues
     import asyncio
     asyncio.run(mem.append_event("runner/exec", payload, sender="runner"))
+
+    # Mirror to SQLite durable history as well
+    try:
+        elog = EventLog()
+        elog.append("runner/exec", "runner", payload)
+    except Exception:
+        pass
 
     # Mirror command output to console
     if out:

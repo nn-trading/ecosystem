@@ -1,0 +1,3 @@
+LOG-003 EXEC-001: mirror runner exec to SQLite; add dev/scan_ascii.py; standardize logging
+
+Co-authored-by: openhands <openhands@all-hands.dev>
