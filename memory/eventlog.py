@@ -29,6 +29,11 @@ CREATE TABLE IF NOT EXISTS rollups (
     kept_after INTEGER NOT NULL,
     top_topics_json TEXT
 );
+
+CREATE TABLE IF NOT EXISTS meta (
+    key TEXT PRIMARY KEY,
+    value TEXT
+);
 """
 
 FTS_SQL = """
