@@ -123,7 +123,7 @@ class LLMClient:
         # Chat system
         if "communication AI" in (system or ""):
             # Keep it short in offline mode
-            return True, "Sure—what should I do?"
+            return True, "Sure - what should I do?"
 
         # Brain planning system (expects JSON)
         if "Return ONLY JSON with keys: title" in (system or ""):

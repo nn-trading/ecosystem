@@ -40,15 +40,19 @@ class TesterAgent:
                         if not self._awaiting_copy:
                             return
                         self._awaiting_copy = False
+                        job_id = msg.get("job_id") if isinstance(msg, dict) else None
                         txt = str(msg.get("data", {}).get("text", "")).strip()
                         if not txt:
-                            # re-issue a corrective task
+                            # emit test failed and re-issue a corrective task
+                            await self.bus.publish("test/failed", {"reason": "empty clipboard"}, sender=self.name, job_id=job_id)
                             fix = "focus notepad then press ctrl+a, ctrl+c (copy again)"
                             pub = getattr(self.bus, "emit", None) or getattr(self.bus, "publish", None) or getattr(self.bus, "send", None)
                             if callable(pub):
                                 r = pub("task/new", {"text": fix}, sender=self.name)  # type: ignore
                                 if inspect.isawaitable(r):
                                     await r
+                        else:
+                            await self.bus.publish("test/passed", {"text": txt, "length": len(txt)}, sender=self.name, job_id=job_id)
 
                 # subscribe
                 r1 = on("task/plan", _plan_handler)

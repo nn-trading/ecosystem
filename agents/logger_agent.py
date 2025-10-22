@@ -33,14 +33,14 @@ class LoggerAgent(BaseAgent):
         await self.bus.publish("ui/print", {"text": f"{self.name}: {text}"}, sender=self.name)
 
     async def run(self):
-        await self._say("Logger initialized. Building summary…")
+        await self._say("Logger initialized. Building summary...")
 
         # Roll up old events to keep DB lean
         rolled = self.log.rollup(max_keep=LOGGER_MAX_KEEP)
         stats = self.log.stats()
 
-        # Human-readable banner like before
-        top_topics_str = ", ".join(f"{k}×{v}" for (k, v) in rolled.get("top_topics", [])) or "—"
+        # Human-readable banner like before (ASCII-only)
+        top_topics_str = ", ".join(f"{k}x{v}" for (k, v) in rolled.get("top_topics", [])) or "-"
         summary_text = (
             "## Session Summary (rolling)\n\n"
             f"- Lines summarized: {rolled.get('summarized', 0)}\n"

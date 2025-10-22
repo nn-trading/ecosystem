@@ -1,9 +1,9 @@
 # C:\bots\ecosys\core\bus.py
 from __future__ import annotations
 import asyncio
+import inspect
 from dataclasses import dataclass
 from typing import Any, Dict, Optional, AsyncIterator, List, Tuple
-
 
 @dataclass
 class Envelope:
@@ -11,7 +11,6 @@ class Envelope:
     payload: Dict[str, Any]
     sender: str
     job_id: Optional[str] = None
-
 
 class EventBus:
     """
@@ -83,6 +82,34 @@ class EventBus:
             async with self._lock:
                 self._prefix_subs = [(p, qq) for (p, qq) in self._prefix_subs if qq is not q]
 
+    # --- Compatibility adapters ---
+    def on(self, topic: str, handler):
+        """
+        Back-compat adapter: register a coroutine/callable handler for a topic.
+        Spawns a background task to consume subscribe(topic) and invoke handler.
+        Returns None (non-awaitable).
+        """
+        loop = asyncio.get_event_loop()
+        async def _runner():
+            async for env in self.subscribe(topic):
+                try:
+                    if inspect.iscoroutinefunction(handler):
+                        await handler({"topic": env.topic, "data": env.payload, "job_id": env.job_id})
+                    else:
+                        res = handler({"topic": env.topic, "data": env.payload, "job_id": env.job_id})
+                        if inspect.isawaitable(res):
+                            await res
+                except Exception:
+                    # never crash the runner
+                    pass
+        loop.create_task(_runner(), name=f"bus.on[{topic}]")
+        return None
+
+    async def emit(self, topic: str, payload: Dict[str, Any], *, sender: str, job_id: Optional[str] = None):
+        return await self.publish(topic, payload, sender=sender, job_id=job_id)
+
+    async def send(self, topic: str, payload: Dict[str, Any], *, sender: str, job_id: Optional[str] = None):
+        return await self.publish(topic, payload, sender=sender, job_id=job_id)
 
 # Back-compat for older modules that import MessageBus
 MessageBus = EventBus

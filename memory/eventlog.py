@@ -5,10 +5,11 @@ import json, sqlite3, time
 from pathlib import Path
 from typing import Dict, Any, List, Tuple, Optional
 
-ROOT = Path(__file__).resolve().parents[1]  # ecosys/
-VAR_DIR = ROOT / "var"
-VAR_DIR.mkdir(parents=True, exist_ok=True)
-DB_PATH = VAR_DIR / "events.db"
+import os
+# Use unified ecosystem memory DB under C:\bots\data by default
+DATA_DB_ENV = os.environ.get("ECOSYS_MEMORY_DB", r"C:\\bots\\data\\memory.db")
+DB_PATH = Path(DATA_DB_ENV)
+DB_PATH.parent.mkdir(parents=True, exist_ok=True)
 
 SCHEMA_SQL = """
 PRAGMA journal_mode=WAL;

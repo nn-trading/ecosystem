@@ -102,8 +102,8 @@ def _heuristic_summary(lines: List[str], max_chars: int) -> str:
     pass_count  = results.count("PASS")
     fail_count  = results.count("FAIL")
 
-    top_senders = ", ".join(f"{k}×{v}" for k,v in senders.most_common(5))
-    top_topics  = ", ".join(f"{k}×{v}" for k,v in topics.most_common(8))
+    top_senders = ", ".join(f"{k}x{v}" for k,v in senders.most_common(5))
+    top_topics  = ", ".join(f"{k}x{v}" for k,v in topics.most_common(8))
 
     parts: List[str] = []
     parts.append("## Session Summary (rolling)")

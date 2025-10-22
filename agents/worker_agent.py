@@ -10,10 +10,10 @@ __all__ = ["WorkerAgent"]
 
 def _truncate(obj: Any, limit: int = 300) -> str:
     try:
-        s = json.dumps(obj, ensure_ascii=False)
+        s = json.dumps(obj, ensure_ascii=True)
     except Exception:
         s = str(obj)
-    return s if len(s) <= limit else s[:limit] + "…"
+    return s if len(s) <= limit else s[:limit] + "..."
 
 def _format_weather_summary(res: Dict[str, Any]) -> Optional[str]:
     """
@@ -42,12 +42,12 @@ def _format_weather_summary(res: Dict[str, Any]) -> Optional[str]:
 
     bits: List[str] = []
     if t: bits.append(str(t))
-    if temp is not None: bits.append(f"{temp}°C")
+    if temp is not None: bits.append(f"{temp} C")
     if wind is not None: bits.append(f"wind {wind} km/h")
     if code is not None: bits.append(f"code {code}")
 
     tail = ", ".join(bits) if bits else ""
-    return f"Weather @ {place}{(' — ' + tail) if tail else ''}"
+    return f"Weather @ {place}{(' - ' + tail) if tail else ''}"
 
 # ---------- worker agent ----------
 
@@ -109,7 +109,7 @@ class WorkerAgent(BaseAgent):
 
                     # Show the call + short result
                     try:
-                        args_json = json.dumps(args, ensure_ascii=False)
+                        args_json = json.dumps(args, ensure_ascii=True)
                     except Exception:
                         args_json = str(args)
                     await self.bus.publish(

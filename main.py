@@ -1,6 +1,6 @@
 # C:\bots\ecosys\main.py
 from __future__ import annotations
-import os, asyncio, textwrap, json, datetime
+import os, asyncio, textwrap, json, datetime, sqlite3, time
 from typing import List
 
 ASSISTANT_CONFIG_PATH = os.environ.get("ASSISTANT_CONFIG_PATH", "C:\\bots\\assistant\\config.json")
@@ -31,7 +31,19 @@ def _append_assistant_jsonl(obj: dict):
     path = _assistant_log_path(cfg)
     try:
         with open(path, "a", encoding="utf-8") as f:
-            f.write(json.dumps(obj, ensure_ascii=False) + "\n")
+            line = json.dumps(obj, ensure_ascii=False) + "\n"
+            f.write(line)
+            try:
+                db = cfg.get("memory_db") or r"C:\\bots\\assistant\\memory.db"
+                con = sqlite3.connect(db)
+                cur = con.cursor()
+                cur.execute("CREATE TABLE IF NOT EXISTS kv (key TEXT PRIMARY KEY, value TEXT)")
+                cur.execute("INSERT OR REPLACE INTO kv(key,value) VALUES (?,?)", ("assistant_jsonl_size", str(os.path.getsize(path))))
+                cur.execute("CREATE TABLE IF NOT EXISTS notes (id INTEGER PRIMARY KEY AUTOINCREMENT, ts REAL, session_id TEXT, key TEXT, value TEXT)")
+                cur.execute("INSERT INTO notes(ts, session_id, key, value) VALUES (?,?,?,?)", (time.time(), cfg.get("last_session") or "", "assistant_log_append", line[:500]))
+                con.commit(); con.close()
+            except Exception:
+                pass
     except Exception:
         pass
 
@@ -57,9 +69,9 @@ except Exception:
     HAS_AUTOFIX = False
 
 BANNER = """
-──────────────────────────────────────────────────────────────────────────────────────────────
+--------------------------------------------------------------------------------
 GPT-5 Desktop Ecosystem ready. Type your instruction. '/status' or '/tools' or '/summary' or '/memstats' or '/model' or '/setmodel <name>' or '/resummarize' or 'exit'
-──────────────────────────────────────────────────────────────────────────────────────────────
+--------------------------------------------------------------------------------
 """.strip()
 
 
@@ -132,7 +144,7 @@ async def input_loop(bus: EventBus, llm: LLMClient, tools, memory: Memory):
                 print("AI: Memstats:\n" + textwrap.indent(pretty, "    "))
                 continue
             if cmd == "/summary":
-                await bus.publish("ui/print", {"text": "[Main] Requesting recent summary…"}, sender="Main")
+                await bus.publish("ui/print", {"text": "[Main] Requesting recent summary..."}, sender="Main")
                 await bus.publish("task/new", {"text": "/summary (request recent summary)"}, sender="Main")
                 continue
             if cmd == "/model":
