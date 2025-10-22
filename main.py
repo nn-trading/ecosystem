@@ -91,7 +91,12 @@ async def summary_printer(bus: EventBus):
     async for env in bus.subscribe("memory/summary"):
         txt = (env.payload or {}).get("text") or ""
         if txt:
-            print(f"AI: [Summary] {txt}")
+            try:
+                safe = txt.encode("ascii", "ignore").decode("ascii", "ignore")
+            except Exception:
+                safe = "".join(ch for ch in txt if ord(ch) < 128)
+            if safe:
+                print(f"AI: [Summary] {safe}")
 
 def _watch_task(label: str, task: asyncio.Task):
     def _cb(t: asyncio.Task):
