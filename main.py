@@ -114,6 +114,7 @@ async def input_loop(bus: EventBus, llm: LLMClient, tools, memory: Memory):
             parts = s.split(" ", 1)
             cmd = parts[0]
             arg = parts[1] if len(parts) > 1 else ""
+            _append_assistant_jsonl({"ts": _iso_now(), "event": "user_command", "cmd": cmd, "arg": arg})
 
             if cmd == "/tools":
                 try:
