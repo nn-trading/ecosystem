@@ -63,7 +63,29 @@ class LoggerAgent(BaseAgent):
         # Subscribe to EVERYTHING and append
         async for env in self.bus.subscribe_prefix(""):
             try:
+                # Always append first
                 self.log.append(env.topic, env.sender, env.payload)
+
+                # Respond to resummarize requests to keep DB lean and summaries fresh
+                if env.topic == "log/resummarize":
+                    rolled = self.log.rollup(max_keep=LOGGER_MAX_KEEP)
+                    stats = self.log.stats()
+                    top_topics_str = ", ".join(f"{k}x{v}" for (k, v) in rolled.get("top_topics", [])) or "-"
+                    summary_text = (
+                        "## Session Summary (rolling)\n\n"
+                        f"- Lines summarized: {rolled.get('summarized', 0)}\n"
+                        f"- Kept recent: {rolled.get('kept', 0)} (max {LOGGER_MAX_KEEP})\n"
+                        f"- Top (rolled) topics: {top_topics_str}\n"
+                    )
+                    await self.bus.publish("memory/summary", {"text": summary_text}, sender=self.name)
+                    # Also refresh compact recent context
+                    recent = self.log.recent(LOGGER_RECENT_FOR_COMMS)
+                    await self.bus.publish("memory/context", {
+                        "recent": recent,
+                        "count": len(recent),
+                        "max_keep": LOGGER_MAX_KEEP,
+                        "stats": stats
+                    }, sender=self.name)
             except Exception as e:
                 # Never crash logger; surface a minimal warning
                 await self.bus.publish("ui/print", {
