@@ -112,12 +112,16 @@ async def bridge_topics_to_bus(bus, topics: List[str], poll_sec: float = 1.0, me
             for topic in topics:
                 last_id = last_ids.get(topic, 0)
                 rows = cur.execute(
-                    "SELECT id, payload_json FROM events WHERE topic=? AND id > ? ORDER BY id ASC LIMIT 100",
+                    "SELECT id, sender, payload_json FROM events WHERE topic=? AND id > ? ORDER BY id ASC LIMIT 100",
                     (topic, last_id),
                 ).fetchall()
                 if not rows:
                     continue
-                for eid, pj in rows:
+                for eid, sender, pj in rows:
+                    # Avoid feedback loops: skip events we originated or those from Main
+                    if sender in ("Bridge", "Main"):
+                        last_id = eid
+                        continue
                     try:
                         data = json.loads(pj) if pj else None
                     except Exception:
