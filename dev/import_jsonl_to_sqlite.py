@@ -57,7 +57,8 @@ def _import_events(mem: Memory, elog: EventLog, events_path: str, safe_tail: int
 
     # Snapshot the end bound and iterate once
     conn = elog.conn
-    conn.execute("BEGIN")
+    if not conn.in_transaction:
+        conn.execute("BEGIN")
     try:
         with open(events_path, 'r', encoding='utf-8', errors='ignore') as f:
             for i, ln in enumerate(f, 1):
@@ -112,7 +113,8 @@ def _import_summaries(mem: Memory, elog: EventLog, summaries_path: str, safe_tai
     scanned = 0
 
     conn = elog.conn
-    conn.execute("BEGIN")
+    if not conn.in_transaction:
+        conn.execute("BEGIN")
     try:
         with open(summaries_path, 'r', encoding='utf-8', errors='ignore') as f:
             for i, ln in enumerate(f, 1):
