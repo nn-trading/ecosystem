@@ -54,6 +54,8 @@ from core.tools import REGISTRY as ToolsRegistry   # << use the SINGLETON
 from core.memory import Memory, DEFAULT_KEEP_LAST
 from core.assistant_loader import AssistantLoader
 from core.event_bridge import bridge_chat_to_bus
+from memory.eventlog import EventLog
+from core.event_bridge import bridge_topics_to_bus
 
 # --- Agents ---
 from agents.comms_agent import CommsAgent
@@ -261,6 +263,166 @@ async def main():
                 await asyncio.sleep(60)
     rot_task = asyncio.create_task(_rotate_loop(), name="mem_rotate_loop")
     _watch_task("mem_rotate_loop", rot_task)
+
+    # Bridge control topics from SQLite to the bus (durable -> live)
+    ctrl_topics = ["log/resummarize", "system/health", "system/heartbeat"]
+    ctrl_task = asyncio.create_task(bridge_topics_to_bus(bus, ctrl_topics, poll_sec=1.0), name="bridge_topics_to_bus")
+    _watch_task("bridge_topics_to_bus", ctrl_task)
+
+    # Periodic service loops: heartbeat, health check, resummarize
+    async def _heartbeat_loop():
+        try:
+            period = float(os.environ.get("HEARTBEAT_SEC", "5"))
+        except Exception:
+            period = 5.0
+        try:
+            while True:
+                try:
+                    await bus.publish("system/heartbeat", {"ts": time.time(), "pid": os.getpid(), "src": "main"}, sender="Main")
+                except Exception:
+                    pass
+                await asyncio.sleep(period)
+        except asyncio.CancelledError:
+            return
+
+    async def _health_loop():
+        try:
+            period = float(os.environ.get("HEALTH_SEC", "60"))
+        except Exception:
+            period = 60.0
+        elog = EventLog()
+        cur = elog.conn.cursor()
+        while True:
+            try:
+                try:
+                    row = cur.execute("SELECT value FROM meta WHERE key='bridge.chat_last_id'").fetchone()
+                    bridge_cursor = row[0] if row else None
+                except Exception as e:
+                    bridge_cursor = f"ERR: {e}"
+                try:
+                    ev_total = int(cur.execute("SELECT COUNT(*) FROM events").fetchone()[0])
+                except Exception as e:
+                    ev_total = f"ERR: {e}"
+                try:
+                    roll_total = int(cur.execute("SELECT COUNT(*) FROM rollups").fetchone()[0])
+                except Exception as e:
+                    roll_total = f"ERR: {e}"
+                payload = {"ts": time.time(), "ok": True, "results": [
+                    ("chat bridge cursor", bridge_cursor),
+                    ("events total", ev_total),
+                    ("rollups total", roll_total),
+                ]}
+                await bus.publish("system/health", payload, sender="Main")
+            except Exception:
+                pass
+            try:
+                await asyncio.sleep(period)
+            except asyncio.CancelledError:
+                break
+
+    async def _resummarize_loop():
+        try:
+            period = float(os.environ.get("RESUMMARIZE_SEC", "300"))
+        except Exception:
+            period = 300.0
+        try:
+            while True:
+                try:
+                    await bus.publish("log/resummarize", {"hint": "periodic"}, sender="Main")
+                except Exception:
+                    pass
+                await asyncio.sleep(period)
+        except asyncio.CancelledError:
+            return
+
+    hb_task = asyncio.create_task(_heartbeat_loop(), name="heartbeat_loop")
+    health_task = asyncio.create_task(_health_loop(), name="health_loop")
+    resum_task = asyncio.create_task(_resummarize_loop(), name="resummarize_loop")
+    _watch_task("heartbeat_loop", hb_task)
+    _watch_task("health_loop", health_task)
+    _watch_task("resummarize_loop", resum_task)
+
+
+
+    # Bridge control topics from SQLite to the bus (durable -> live)
+    ctrl_topics = ["log/resummarize", "system/health", "system/heartbeat"]
+    ctrl_task = asyncio.create_task(bridge_topics_to_bus(bus, ctrl_topics, poll_sec=1.0), name="bridge_topics_to_bus")
+    _watch_task("bridge_topics_to_bus", ctrl_task)
+
+    # Periodic service loops: heartbeat, health check, resummarize
+    async def _heartbeat_loop():
+        try:
+            period = float(os.environ.get("HEARTBEAT_SEC", "5"))
+        except Exception:
+            period = 5.0
+        try:
+            while True:
+                try:
+                    await bus.publish("system/heartbeat", {"ts": time.time(), "pid": os.getpid(), "src": "main"}, sender="Main")
+                except Exception:
+                    pass
+                await asyncio.sleep(period)
+        except asyncio.CancelledError:
+            return
+
+    async def _health_loop():
+        try:
+            period = float(os.environ.get("HEALTH_SEC", "60"))
+        except Exception:
+            period = 60.0
+        elog = EventLog()
+        cur = elog.conn.cursor()
+        while True:
+            try:
+                try:
+                    row = cur.execute("SELECT value FROM meta WHERE key='bridge.chat_last_id'").fetchone()
+                    bridge_cursor = row[0] if row else None
+                except Exception as e:
+                    bridge_cursor = f"ERR: {e}"
+                try:
+                    ev_total = int(cur.execute("SELECT COUNT(*) FROM events").fetchone()[0])
+                except Exception as e:
+                    ev_total = f"ERR: {e}"
+                try:
+                    roll_total = int(cur.execute("SELECT COUNT(*) FROM rollups").fetchone()[0])
+                except Exception as e:
+                    roll_total = f"ERR: {e}"
+                payload = {"ts": time.time(), "ok": True, "results": [
+                    ("chat bridge cursor", bridge_cursor),
+                    ("events total", ev_total),
+                    ("rollups total", roll_total),
+                ]}
+                await bus.publish("system/health", payload, sender="Main")
+            except Exception:
+                pass
+            try:
+                await asyncio.sleep(period)
+            except asyncio.CancelledError:
+                break
+
+    async def _resummarize_loop():
+        try:
+            period = float(os.environ.get("RESUMMARIZE_SEC", "300"))
+        except Exception:
+            period = 300.0
+        try:
+            while True:
+                try:
+                    await bus.publish("log/resummarize", {"hint": "periodic"}, sender="Main")
+                except Exception:
+                    pass
+                await asyncio.sleep(period)
+        except asyncio.CancelledError:
+            return
+
+    hb_task = asyncio.create_task(_heartbeat_loop(), name="heartbeat_loop")
+    health_task = asyncio.create_task(_health_loop(), name="health_loop")
+    resum_task = asyncio.create_task(_resummarize_loop(), name="resummarize_loop")
+    _watch_task("heartbeat_loop", hb_task)
+    _watch_task("health_loop", health_task)
+    _watch_task("resummarize_loop", resum_task)
+
+
 
     # Start agents
     agents = [
