@@ -53,6 +53,7 @@ from core.llm_client import LLMClient
 from core.tools import REGISTRY as ToolsRegistry   # << use the SINGLETON
 from core.memory import Memory, DEFAULT_KEEP_LAST
 from core.assistant_loader import AssistantLoader
+from core.event_bridge import bridge_chat_to_bus
 
 # --- Agents ---
 from agents.comms_agent import CommsAgent
@@ -242,6 +243,10 @@ async def main():
     # Start a recorder that logs every bus event to memory
     rec_task = asyncio.create_task(bus_recorder(bus, memory), name="bus_recorder")
     _watch_task("bus_recorder", rec_task)
+
+    # Start a bridge that reflects chat/message events in SQLite to the bus
+    bridge_task = asyncio.create_task(bridge_chat_to_bus(bus), name="bridge_chat_to_bus")
+    _watch_task("bridge_chat_to_bus", bridge_task)
 
     # Periodic rotation to keep events.jsonl bounded
     async def _rotate_loop():

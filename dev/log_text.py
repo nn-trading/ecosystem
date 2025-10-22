@@ -4,6 +4,7 @@ import os, sys, asyncio
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 
 from core.memory import Memory
+from memory.eventlog import EventLog
 
 
 def main():
@@ -35,8 +36,16 @@ def main():
         'chars': len(text or ''),
     }
 
+    # Log to JSONL (hot log)
     mem = Memory()
     asyncio.run(mem.append_event('chat/message', payload, sender='assistant'))
+
+    # Mirror to SQLite (durable)
+    try:
+        elog = EventLog()
+        elog.append('chat/message', 'assistant', payload)
+    except Exception:
+        pass
 
 
 if __name__ == '__main__':

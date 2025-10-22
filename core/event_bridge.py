@@ -1,0 +1,73 @@
+from __future__ import annotations
+import asyncio
+import json
+from typing import Optional
+
+from memory.eventlog import EventLog
+
+META_KEY = "bridge.chat_last_id"
+
+async def bridge_chat_to_bus(bus, poll_sec: float = 1.0) -> None:
+    """
+    Poll SQLite EventLog for new chat/message events and publish them to the bus.
+    - Only processes rows with topic = 'chat/message'
+    - Tracks last processed id in meta[bridge.chat_last_id] for exact resume
+    - Routes role=='user' to 'user/text'; role=='assistant' to 'ui/print'
+    """
+    log = EventLog()
+    cur = log.conn.cursor()
+
+    def _get_last_id() -> int:
+        try:
+            row = cur.execute("SELECT value FROM meta WHERE key=?", (META_KEY,)).fetchone()
+            if row and row[0]:
+                return int(row[0])
+        except Exception:
+            pass
+        # Default to current max to avoid replaying old messages on first run
+        try:
+            row = cur.execute("SELECT COALESCE(MAX(id),0) FROM events WHERE topic='chat/message'").fetchone()
+            return int(row[0] or 0)
+        except Exception:
+            return 0
+
+    def _set_last_id(v: int) -> None:
+        try:
+            log.conn.execute("INSERT OR REPLACE INTO meta(key,value) VALUES (?,?)", (META_KEY, str(int(v))))
+            log.conn.commit()
+        except Exception:
+            pass
+
+    last_id = _get_last_id()
+
+    while True:
+        try:
+            rows = cur.execute(
+                "SELECT id, payload_json FROM events WHERE topic='chat/message' AND id > ? ORDER BY id ASC LIMIT 100",
+                (last_id,),
+            ).fetchall()
+            if not rows:
+                await asyncio.sleep(poll_sec)
+                continue
+
+            for eid, pj in rows:
+                role: Optional[str] = None
+                text: Optional[str] = None
+                try:
+                    data = json.loads(pj) if pj else {}
+                    role = (data.get("role") or "").strip().lower()
+                    text = (data.get("text") or "").strip()
+                except Exception:
+                    text = None
+                if text:
+                    if role == "user":
+                        await bus.publish("user/text", {"text": text}, sender="Bridge")
+                    elif role == "assistant":
+                        await bus.publish("ui/print", {"text": f"Assistant: {text}"}, sender="Bridge")
+                last_id = eid
+            _set_last_id(last_id)
+        except asyncio.CancelledError:
+            break
+        except Exception:
+            # Never crash bridge; backoff a bit
+            await asyncio.sleep(max(2.0, poll_sec))
