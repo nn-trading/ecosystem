@@ -80,7 +80,12 @@ async def ui_printer(bus: EventBus):
         payload = env.payload or {}
         text = payload.get("text") or ""
         if text:
-            print(f"AI: {text}")
+            try:
+                safe = text.encode("ascii", "ignore").decode("ascii", "ignore")
+            except Exception:
+                safe = "".join(ch for ch in text if ord(ch) < 128)
+            if safe:
+                print(f"AI: {safe}")
 
 async def summary_printer(bus: EventBus):
     async for env in bus.subscribe("memory/summary"):
