@@ -1,0 +1,24 @@
+## Session Summary (rolling)
+
+- Lines summarized: 272
+- Recent highlights:
+  - {"ts": 1760981569.0413773, "role": "assistant", "content": "AI-2:Brain: Brain online."}
+  - {"ts": 1760981569.0413773, "role": "assistant", "content": "AI-3:Worker: Worker online."}
+  - {"ts": 1760981569.0413773, "role": "assistant", "content": "AI-4:Tester: Tester online."}
+  - {"ts": 1760981569.0413773, "role": "assistant", "content": "AI-5:Logger: Logger initialized. Building summary…"}
+  - {"ts": 1760981572.4711492, "role": "assistant", "content": "AI-5:Logger: Summary ready."}
+  - {"ts": 1760981573.3028717, "role": "user", "content": "hello"}
+  - {"ts": 1760981573.3028717, "role": "assistant", "content": "AI-1:Comms: Got it. Handing to Brain (job ed268d57)."}
+  - {"ts": 1760981574.79007, "role": "assistant", "content": "AI-1:Comms: Plan ready: Action Plan — 2 step(s)."}
+  - {"ts": 1760981574.792078, "role": "assistant", "content": "AI-1:Comms: ✅ Done: Action Plan.\nSteps OK: 2/2\n- note: OK — {\"note\": \"Fallback: inspect workspace\"}\n- fs.ls: OK — {\"ok\": true, \"pat
+  - {"ts": 1760981574.7931561, "role": "assistant", "content": "RESULT: Steps OK: 2/2\n- note: OK — {\"note\": \"Fallback: inspect workspace\"}\n- fs.ls: OK — {\"ok\": true, \"path\": \"C:\\\\bots\\\\ecos
+  - {"ts": 1760981585.563228, "role": "user", "content": "why aren't you answering hello to me?"}
+  - {"ts": 1760981585.563228, "role": "assistant", "content": "AI-1:Comms: Got it. Handing to Brain (job 7b806223)."}
+  - {"ts": 1760981586.6553216, "role": "assistant", "content": "AI-1:Comms: Plan ready: Action Plan — 2 step(s)."}
+  - {"ts": 1760981586.6553216, "role": "assistant", "content": "AI-1:Comms: ✅ Done: Action Plan.\nSteps OK: 2/2\n- note: OK — {\"note\": \"Fallback: inspect workspace\"}\n- fs.ls: OK — {\"ok\": true, \"pa
+  - {"ts": 1760981586.6596067, "role": "assistant", "content": "RESULT: Steps OK: 2/2\n- note: OK — {\"note\": \"Fallback: inspect workspace\"}\n- fs.ls: OK — {\"ok\": true, \"path\": \"C:\\\\bots\\\\ecos
+  - {"ts": 1760981819.4467092, "role": "assistant", "content": "AI-1:Comms: Comms online."}
+  - {"ts": 1760981819.4467092, "role": "assistant", "content": "AI-2:Brain: Brain online."}
+  - {"ts": 1760981819.4467092, "role": "assistant", "content": "AI-3:Worker: Worker online."}
+  - {"ts": 1760981819.4467092, "role": "assistant", "content": "AI-4:Tester: Tester online."}
+  - {"ts": 1760981819.4467092, "role": "assistant", "content": "AI-5:Logger: Logger initialized. Building summary…"}

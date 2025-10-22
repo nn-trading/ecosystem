@@ -1,0 +1,5 @@
+rich>=13.7
+pydantic>=2.6
+psutil>=5.9
+prompt-toolkit>=3.0
+openai>=1.40

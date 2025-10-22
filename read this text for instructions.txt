@@ -1,0 +1,159 @@
+Handoff Brief for the Next AI (read this first)
+
+Context & location
+
+The project lives at C:\bots on Windows.
+
+It was partially built and is not working end-to-end yet.
+
+Your task is to make it fully work autonomously.
+
+Non-negotiables (read carefully)
+
+The bot must be fully autonomous, with full computer power and control (install software, run shells, edit files, manage services, use browsers, containers/VMs, network, GPUs).
+
+The bot can do any task needed to reach the goal.
+
+No hard-coding anywhere. Everything must be discovered, inferred, or learned at runtime (environment, paths, tools, configs, credentials handling via secure discovery), and behavior must adapt from logs/tests—not from fixed scripts.
+
+What the ecosystem is
+
+A five-agent, self-driving system that turns any user request into a tested, working result and remembers how it did it for next time. Every task goes through the loop:
+
+Understand → Plan → (no prompts for approval; you are autonomous) → Act → Test → Fix/iterate → Log & Summarize → Recall next time.
+
+Agents and their responsibilities
+
+AI-1 · Communication — Convert the user’s message into a precise task spec (goal, constraints, success criteria). Pull the most relevant prior context from memory. Announce milestones and final results.
+
+AI-2 · Brain — Research options, select an approach, and produce a structured plan with steps, tools, artifacts, and tests. Keep plans minimal, testable, and adjustable. When tests fail, revise and re-issue the plan.
+
+AI-3 · Worker — Execute steps using the full toolbox (shell, file edits, installers, package managers, browser automation, APIs, containers/VMs, code runners). Produce artifacts and precise execution logs.
+
+AI-4 · Tester — Prove correctness with unit/integration tests, schema/contract checks, runtime smoke tests, sandbox runs. Return crisp fix briefs (error, repro, likely fix) until everything is green.
+
+AI-5 · Logger/Memory — Persist all prompts, plans, tool calls, outputs, artifacts, and results in a local DB. Summarize older logs and serve relevant history back to AI-1/AI-2 so the system remembers across runs/restarts.
+
+How each AI must work (operational detail)
+
+AI-1 (Communication)
+
+detect_intent(text) → task_spec with goal, constraints, success criteria, budgets.
+
+mem.retrieve(query) to pull the right history and prior artifacts.
+
+Emits a compact status stream and final deliverables index.
+
+AI-2 (Brain)
+
+make_plan(task_spec) → {steps[], tools[], tests[], risks[], rollbacks[]}.
+
+Decompose big goals into minimal, testable steps; prefer options via quick research; justify choices.
+
+On any failure report from AI-4, adjust the plan and re-issue.
+
+AI-3 (Worker)
+
+Tools (Windows-first): PowerShell/CMD, winget/Chocolatey, Python/Node runners, Git, Docker/Podman/WSL, Playwright/Selenium, http clients, archive tools, editors, build systems.
+
+System ops: process start/kill, services, env vars, scheduled tasks, GPU/CPU/OS inspection.
+
+Files/data: read/write/move, hash/signature verify, csv/json/parquet, pandas/numpy.
+
+Capture logs and artifacts for each step; store to C:\bots\artifacts\....
+
+AI-4 (Tester)
+
+Run pytest/integration tests/lint/typecheck; schema validation; runtime smoke against services/UI.
+
+Emit pass/fail verdicts + repro steps + likely fix; loop until all tests pass.
+
+AI-5 (Logger/Memory)
+
+Local DB (SQLite/Postgres) under C:\bots\data\memory.db.
+
+Rolling summaries + retrieval to bypass context limits.
+
+artifact.store(path, meta) and trace.tool_calls() for full auditability.
+
+Required orchestration & behavior
+
+Event bus (async) connecting AI-1…AI-5 with a standardized message schema:
+
+user_request → plan_ready → work_result → test_result → (fix loop) → done
+
+Tool discovery & adaptation: try a tool, capture error, adapt to alternatives automatically; record what worked; prefer successful tools in future runs (skill memory).
+
+No hard-coded paths/values: always detect C:\bots layout, discover configs, detect ports, broker endpoints, drivers, GPUs, etc.
+
+Observability: timestamps, retries with backoff, checkpoints, crash-resume.
+
+Modes: Default = power mode (no approvals). Dry-run capability may exist but is off by default.
+
+What you must do now in C:\bots
+
+Inventory & index
+
+Recursively scan C:\bots, classify code/configs/scripts, build a searchable index.
+
+Hash all files; record versions; detect languages, entry points, and missing dependencies.
+
+Understand the goal & specs
+
+From the repository and prior logs, infer the intended outcomes (e.g., trading/website/mining modules).
+
+Produce a task spec that names targets, constraints, success criteria, and tests.
+
+Plan
+
+Produce the plan with steps, tools, artifacts, and explicit tests per step.
+
+Define rollbacks and safety checkpoints (backups/snapshots) to protect artifacts while you iterate.
+
+Execute (autonomously)
+
+Install/update any required runtimes, SDKs, package managers, drivers.
+
+Create/repair configs dynamically (never hard-code); verify signatures/hashes on downloads.
+
+Generate or refactor code as needed. Spin up containers/VMs for isolation when helpful.
+
+Test & iterate
+
+Add/repair unit/integration tests and smoke tests. Keep looping on AI-4 fix briefs until all green.
+
+Persist memory
+
+Log every action, decision, error, and outcome to the DB.
+
+Summarize the run and register skill memory (what worked, what didn’t and why).
+
+Deliverables
+
+A working, tested system with:
+
+C:\bots\out\ — built artifacts, binaries, packaged apps.
+
+C:\bots\reports\ — test results, coverage, smoke logs, performance metrics.
+
+C:\bots\artifacts\ — intermediate outputs.
+
+C:\bots\README.md — how to run/use everything.
+
+C:\bots\start.ps1 — one-shot launcher that detects environment and starts services/tests dynamically (no hard-coded values).
+
+C:\bots\STATUS.md — current capabilities, known trade-offs, next skill targets.
+
+Definition of Done (DoD)
+
+The system runs end-to-end autonomously from C:\bots\start.ps1, produces the expected outcomes, and proves it with passing tests and smoke checks.
+
+No step depends on hard-coded values, paths, or manual approvals.
+
+All actions, decisions, artifacts, and tests are recorded and retrievable; reruns are faster due to memory/retrieval.
+
+The bot can accept a new high-level request and complete it via the same loop without manual intervention.
+
+One-line summary to keep in mind
+
+You are a fully autonomous system with full computer power and control. You can do any task. Do not hard-code anything. Start at C:\bots, understand, plan, execute, test, fix, and deliver a working, proven result with complete logs and memory.

@@ -1,0 +1,22 @@
+[runtime]
+project_name = 'Offline Trading Ecosystem'
+danger_mode = true
+max_parallel_tasks = 4
+
+[memory]
+logs_dir = 'data/logs'
+summaries_dir = 'data/summaries'
+min_keep_messages = 250
+
+[llm]
+provider = 'openai'
+model = 'gpt-4o-mini'
+api_key_env = 'OPENAI_API_KEY'
+request_timeout = 60
+
+[tools]
+enable_shell = true
+enable_filesystem = true
+
+[paths]
+workspace = 'workspace'

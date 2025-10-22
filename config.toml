@@ -1,0 +1,19 @@
+[runtime]
+project_name = "Offline trading setup v2"
+danger_mode = true
+max_parallel_tasks = 4
+
+[memory]
+logs_dir = "C:/bots/ecosys/var/logs"
+summaries_dir = "C:/bots/ecosys/var/summaries"
+min_keep_messages = 4000
+
+[llm]
+provider = "openai"
+model = "gpt-5"
+api_key_env = "OPENAI_API_KEY"
+request_timeout = 90
+
+[paths]
+workspace = "C:/bots/ecosys/workspace"
+root = "C:/bots/ecosys"
