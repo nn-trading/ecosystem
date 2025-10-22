@@ -20,10 +20,9 @@ def search(query: str, limit: int = 100) -> Dict[str, Any]:
     preview_rows: List[Dict[str, Any]] = []
     for r in rows:
         payload = r.get("payload", {})
-        # make a compact preview string
         pv = str(payload)
         if len(pv) > 300:
-            pv = pv[:300] + "…"
+            pv = pv[:300] + "..."
         preview_rows.append({
             "id": r["id"],
             "topic": r["topic"],

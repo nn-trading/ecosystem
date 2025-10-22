@@ -42,6 +42,9 @@ class ToolRegistry:
     def list(self) -> Dict[str, str]:
         return {k: v.get("desc", "") for k, v in self._tools.items()}
 
+    def available(self) -> List[str]:
+        return sorted(self._tools.keys())
+
 # Singleton registry
 REGISTRY = ToolRegistry()
 
@@ -61,6 +64,8 @@ for _m in (
     "tools.syscontrol",
     "tools.winui",
     "tools.fs",
+    "tools.memutil",
+    "tools.weather",
 ):
     _safe_register(_m)
 
