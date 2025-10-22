@@ -60,23 +60,13 @@ class WorkerAgent(BaseAgent):
                         error_text = "Tool step missing 'tool' name."
                         break
 
-                    # Emit tool call trace and execute the tool via ToolRegistry
-                    try:
-                        await self.bus.publish("tool/call", {"tool": tool, "args": args}, sender=self.name, job_id=job_id)
-                    except Exception:
-                        pass
+                    # Execute the tool via ToolRegistry (ToolRegistry handles tracing)
                     try:
                         result = await self._call_tool(tool, args)
                     except Exception as e:
                         result = {"ok": False, "error": f"{type(e).__name__}: {e}"}
 
                     last_result = result
-
-                    # Emit tool result trace
-                    try:
-                        await self.bus.publish("tool/result", {"tool": tool, "result": result}, sender=self.name, job_id=job_id)
-                    except Exception:
-                        pass
 
                     # **Log the result for this step** (for later analysis or autofix)
                     result_entry: Dict[str, Any] = result if isinstance(result, dict) else {"result": result}

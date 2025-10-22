@@ -1,4 +1,6 @@
 # C:\bots\ecosys\core\tools.py
+# NOTE: ToolRegistry now supports central tracing via set_tracer(callable)
+
 from __future__ import annotations
 
 import importlib
@@ -9,6 +11,10 @@ from typing import Any, Dict, Callable, Optional, List
 class ToolRegistry:
     def __init__(self) -> None:
         self._tools: Dict[str, Dict[str, Any]] = {}
+        self._tracer: Optional[Callable[[str, Dict[str, Any]], None]] = None
+
+    def set_tracer(self, tracer: Optional[Callable[[str, Dict[str, Any]], None]]) -> None:
+        self._tracer = tracer
 
     def add(self, name: str, fn: Callable[..., Dict[str, Any]], desc: str = "") -> None:
         self._tools[name] = {"fn": fn, "desc": desc}
@@ -32,7 +38,17 @@ class ToolRegistry:
             else:
                 return {"ok": False, "error": f"tool not found: {name}"}
         try:
+            if self._tracer:
+                try:
+                    self._tracer("tool/call", {"tool": name, "args": kwargs})
+                except Exception:
+                    pass
             res = tool["fn"](**kwargs)
+            if self._tracer:
+                try:
+                    self._tracer("tool/result", {"tool": name, "result": res})
+                except Exception:
+                    pass
             if not isinstance(res, dict):
                 return {"ok": False, "error": f"tool {name} returned non-dict"}
             return res

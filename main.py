@@ -187,6 +187,19 @@ async def main():
     memory = Memory()
     tools = ToolsRegistry   # << IMPORTANT: this is the shared singleton with all registrations
 
+    # Centralize tool tracing via ToolsRegistry -> publish to EventBus
+    try:
+        def _tools_trace(topic: str, payload: dict):
+            try:
+                loop = asyncio.get_running_loop()
+                loop.create_task(bus.publish(topic, payload, sender="ToolsRegistry"))
+            except Exception:
+                pass
+        if hasattr(tools, "set_tracer"):
+            tools.set_tracer(_tools_trace)  # type: ignore[attr-defined]
+    except Exception:
+        pass
+
     # Start UI consumers first
     # Assistant resume context
     try:

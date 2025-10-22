@@ -45,7 +45,7 @@ class ExecutorAgent(BaseAgent):
         out = {"index": idx, "ok": ok, "step": {"tool": tool, "args": args}, "result": res}
         await self.bus.publish("exec/result", out, sender=self.name)
 
-        # Also mirror a compact line to the console
-        pretty = json.dumps({"ok": ok, "tool": tool, "args": args}, ensure_ascii=False)
+        # Also mirror a compact line to the console (ASCII-only)
+        pretty = json.dumps({"ok": ok, "tool": tool, "args": args}, ensure_ascii=True)
         await self.bus.publish("comms/out", {"text": f"[Executor] {pretty}"}, sender=self.name)
         return out
