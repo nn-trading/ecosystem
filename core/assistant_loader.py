@@ -41,8 +41,18 @@ def _tail_lines(path: str, n: int = 200) -> List[str]:
 class AssistantLoader:
     def __init__(self) -> None:
         self.cfg = _read_json(ASSISTANT_CONFIG_PATH)
-        self.log_dir = self.cfg.get("log_dir") or r"C:\\bots\\assistant\\logs"
-        self.art_dir = self.cfg.get("artifacts") or r"C:\\bots\\assistant\\artifacts"
+        self.log_dir = (
+            os.environ.get("ASSISTANT_LOG_DIR")
+            or os.environ.get("ECOSYS_ASSISTANT_LOG_DIR")
+            or self.cfg.get("log_dir")
+            or r"C:\\bots\\assistant\\logs"
+        )
+        self.art_dir = (
+            os.environ.get("ASSISTANT_ART_DIR")
+            or os.environ.get("ECOSYS_ASSISTANT_ART_DIR")
+            or self.cfg.get("artifacts")
+            or r"C:\\bots\\assistant\\artifacts"
+        )
         self.db_path = os.environ.get("ECOSYS_MEMORY_DB", self.cfg.get("memory_db") or r"C:\\bots\\data\\memory.db")
         self.last_session = self.cfg.get("last_session") or ""
         self.assistant_jsonl = os.path.join(self.log_dir, "assistant.jsonl")

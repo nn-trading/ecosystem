@@ -128,12 +128,17 @@ class LLMClient:
         # Brain planning system (expects JSON)
         if "Return ONLY JSON with keys: title" in (system or ""):
             # Minimal fallback plan
+            try:
+                from pathlib import Path as _Path
+                _root = os.environ.get("ECOSYS_REPO_ROOT") or str(_Path(__file__).resolve().parent.parent)
+            except Exception:
+                _root = r"C:\\bots\\ecosys"
             minimal = {
                 "title": "Action Plan",
                 "rationale": "Offline fallback",
                 "steps": [
                     {"type": "reason", "description": "Fallback: inspect workspace"},
-                    {"type": "tool", "tool": "fs.ls", "args": {"path": r"C:\bots\ecosys"}, "description": "List workspace"},
+                    {"type": "tool", "tool": "fs.ls", "args": {"path": _root}, "description": "List workspace"},
                 ],
             }
             import json as _json

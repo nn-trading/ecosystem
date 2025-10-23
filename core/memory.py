@@ -4,7 +4,7 @@ import os, io, json, time, asyncio, tempfile, shutil
 from dataclasses import dataclass, asdict
 from typing import Any, Dict, Optional, Iterable, List, Tuple
 
-ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
+ROOT = os.environ.get("ECOSYS_REPO_ROOT") or os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
 LOG_DIR = os.path.join(ROOT, "workspace", "logs")
 EVENTS_FILE = os.path.join(LOG_DIR, "events.jsonl")
 SUMMARIES_FILE = os.path.join(LOG_DIR, "summaries.jsonl")

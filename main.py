@@ -13,7 +13,12 @@ def _load_assistant_config():
         return {}
 
 def _assistant_log_path(cfg):
-    log_dir = cfg.get("log_dir") or "C:\\bots\\assistant\\logs"
+    log_dir = (
+        os.environ.get("ASSISTANT_LOG_DIR")
+        or cfg.get("log_dir")
+        or os.environ.get("ECOSYS_ASSISTANT_LOG_DIR")
+        or "C:\\bots\\assistant\\logs"
+    )
     try:
         os.makedirs(log_dir, exist_ok=True)
     except Exception:
@@ -367,7 +372,14 @@ async def main():
     try:
         if headless:
             await bus.publish("ui/print", {"text": "[Main] Headless mode: running service loops only."}, sender="Main")
-            await asyncio.Event().wait()
+            try:
+                stop_after = float(os.environ.get("STOP_AFTER_SEC", "0"))
+            except Exception:
+                stop_after = 0.0
+            if stop_after > 0:
+                await asyncio.sleep(stop_after)
+            else:
+                await asyncio.Event().wait()
         else:
             await input_loop(bus, llm, tools, memory)
     finally:
