@@ -270,23 +270,13 @@ async def main():
     _watch_task("mem_rotate_loop", rot_task)
 
     # Bridge control topics from SQLite to the bus (durable -> live)
-    ctrl_topics = ["user/text", "task/new", "task/exec", "log/resummarize", "system/health", "system/heartbeat"]
+    ctrl_topics = ["log/resummarize", "system/health", "system/heartbeat"]
     ctrl_task = asyncio.create_task(bridge_topics_to_bus(bus, ctrl_topics, poll_sec=1.0), name="bridge_topics_to_bus")
     _watch_task("bridge_topics_to_bus", ctrl_task)
 
     chat_task = asyncio.create_task(bridge_chat_to_bus(bus, poll_sec=1.0), name="bridge_chat_to_bus")
     _watch_task("bridge_chat_to_bus", chat_task)
-
-    async def _user_text_to_task_new():
-        async for env in bus.subscribe("user/text"):
-            payload = env.payload if isinstance(env.payload, dict) else (env.payload or {})
-            text = str(payload.get("text") or payload.get("content") or "")
-            if text:
-                await bus.publish("task/new", {"text": text}, sender="Main", job_id=env.job_id)
-
-    user_text_task = asyncio.create_task(_user_text_to_task_new(), name="user_text_to_task_new")
-    _watch_task("user_text_to_task_new", user_text_task)
-
+    await bus.publish("ui/print", {"text": f"[Main] Bridges ready. CWD={os.getcwd()}"}, sender="Main")
 
 # Periodic service loops: heartbeat, health check, resummarize
     async def _heartbeat_loop():
@@ -407,3 +397,4 @@ if __name__ == "__main__":
         asyncio.run(main())
     except KeyboardInterrupt:
         pass
+
