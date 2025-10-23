@@ -10,8 +10,5 @@ logs/probes/
 # Python/cache
 pycache/
 *.pyc
-
 # Backups
 C:/bots/backups/
-
-
