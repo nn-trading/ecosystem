@@ -12,7 +12,7 @@ async def bridge_chat_to_bus(bus, poll_sec: float = 1.0) -> None:
     Poll SQLite EventLog for new chat/message events and publish them to the bus.
     - Only processes rows with topic = 'chat/message'
     - Tracks last processed id in meta[bridge.chat_last_id] for exact resume
-    - Routes role=='user' to 'user/text'; role=='assistant' to 'ui/print'
+    - Routes role=='user' directly to 'task/new' so planning/execution proceeds
     """
     log = EventLog()
     cur = log.conn.cursor()
@@ -24,7 +24,6 @@ async def bridge_chat_to_bus(bus, poll_sec: float = 1.0) -> None:
                 return int(row[0])
         except Exception:
             pass
-        # Default to current max to avoid replaying old messages on first run
         try:
             row = cur.execute("SELECT COALESCE(MAX(id),0) FROM events WHERE topic='chat/message'").fetchone()
             return int(row[0] or 0)
@@ -51,8 +50,8 @@ async def bridge_chat_to_bus(bus, poll_sec: float = 1.0) -> None:
                 continue
 
             for eid, pj in rows:
-                role: Optional[str] = None
-                text: Optional[str] = None
+                role = None
+                text = None
                 try:
                     data = json.loads(pj) if pj else {}
                     role = (data.get("role") or "").strip().lower()
@@ -61,7 +60,7 @@ async def bridge_chat_to_bus(bus, poll_sec: float = 1.0) -> None:
                     text = None
                 if text:
                     if role == "user":
-                        await bus.publish("user/text", {"text": text}, sender="Bridge")
+                        await bus.publish("task/new", {"text": text}, sender="Bridge", job_id=f"chat.{eid}")
                     elif role == "assistant":
                         await bus.publish("ui/print", {"text": f"Assistant: {text}"}, sender="Bridge")
                 last_id = eid
@@ -69,9 +68,7 @@ async def bridge_chat_to_bus(bus, poll_sec: float = 1.0) -> None:
         except asyncio.CancelledError:
             break
         except Exception:
-            # Never crash bridge; backoff a bit
             await asyncio.sleep(max(2.0, poll_sec))
-
 async def bridge_topics_to_bus(bus, topics: List[str], poll_sec: float = 1.0, meta_prefix: str = "bridge") -> None:
     """
     Bridge selected topics from SQLite EventLog to the bus.
