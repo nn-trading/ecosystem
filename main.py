@@ -251,7 +251,7 @@ async def main():
     rec_task = asyncio.create_task(bus_recorder(bus, memory), name="bus_recorder")
     _watch_task("bus_recorder", rec_task)
 
-    # Start a bridge that reflects chat/message events in SQLite to the bus\1
+    # Start a bridge that reflects chat/message events in SQLite to the bus
 # Periodic rotation to keep events.jsonl bounded
     async def _rotate_loop():
         while True:
@@ -268,7 +268,7 @@ async def main():
 
     # Bridge control topics from SQLite to the bus (durable -> live)
     ctrl_topics = ["chat/message", "user/text", "task/new", "task/exec", "log/resummarize", "system/health", "system/heartbeat"]
-    ctrl_task = asyncio.create_task(bridge_topics_to_bus(bus, ctrl_topics, poll_sec=1.0), name="bridge_topics_to_bus")\1
+    ctrl_task = asyncio.create_task(bridge_topics_to_bus(bus, ctrl_topics, poll_sec=1.0), name="bridge_topics_to_bus")
 
     async def _chat_to_tasknew_dispatcher():
         async for env in bus.subscribe("chat/message"):
