@@ -50,29 +50,28 @@ def _parse_actions(text: str) -> List[Dict[str, Any]]:
     asked_copy  = (" paste " not in s) and ((" copy " in s) or ("ctrl+c" in s)) or (" then copy" in s)
     asked_paste = (" paste " in s) or ("ctrl+v" in s) or (" then paste" in s)
 
-    # 1) type "quoted text"
-    for m in re.finditer(r'\btype\s+[\"]([^\"]+)[\"]', t, flags=re.IGNORECASE):
-        val = (m.group(1) or "").strip()
-        if val:
-            steps.append({"type": "tool", "tool": "ui.type_text", "args": {"text": val}})
-            typed_any = True
+    typed_texts: List[str] = []
 
-    # 2) type exactly: <text>  OR  type: <text>
-    m = re.search(r'\btype(?:\s+exactly)?\s*:\s*([^\r\n]+)', t, flags=re.IGNORECASE)
+    # Prefer explicit multi-word forms first (mutually exclusive)
+    m = re.search(r'\btype\s+exactly\s*:\s*(.+?)(?:\s+(?:then|and)\b|$)', t, flags=re.IGNORECASE)
     if m:
         val = (m.group(1) or "").strip()
-        val = re.split(r'\s+(?:then|and)\s+', val, maxsplit=1, flags=re.IGNORECASE)[0].strip()
         if val:
-            steps.append({"type": "tool", "tool": "ui.type_text", "args": {"text": val}})
-            typed_any = True
+            typed_texts.append(val)
+    if not typed_texts:
+        m = re.search(r'\btype\s*:\s*(.+?)(?:\s+(?:then|and)\b|$)', t, flags=re.IGNORECASE)
+        if m:
+            val = (m.group(1) or "").strip()
+            if val:
+                typed_texts.append(val)
+    if not typed_texts:
+        q = re.search(r'\btype\s+["]([^"]+)["]', t, flags=re.IGNORECASE)
+        if q:
+            val = (q.group(1) or "").strip()
+            if val:
+                typed_texts.append(val)
 
-    # 3) type <word> (single token fallback)  skip 'exactly' and 'exactly:' and tokens ending with ':'
-    for m in re.finditer(r'\btype\s+([^\s,;:]+)', t, flags=re.IGNORECASE):
-        val = (m.group(1) or "").strip().strip('"').strip("'").rstrip(":")
-        if not val:
-            continue
-        if val.lower() == "exactly":
-            continue
+    for val in typed_texts:
         steps.append({"type": "tool", "tool": "ui.type_text", "args": {"text": val}})
         typed_any = True
 
