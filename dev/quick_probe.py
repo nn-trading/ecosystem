@@ -1,5 +1,5 @@
 ﻿import os, json, subprocess
-root = os.path.abspath(os.path.join(os.path.dirname(file), '..'))
+root = os.path.abspath(os.path.join(os.path.dirname(__file__), '..'))
 events = os.path.join(root, 'workspace', 'logs', 'events.jsonl')
 n = int(os.environ.get('PROBE_TAIL','5'))
 
@@ -33,3 +33,4 @@ except Exception:
     pass
 
 print(json.dumps({'tail_n': n, 'heartbeat_count': int(hb), 'health_count': int(hl), 'headless_pid_alive': alive}, ensure_ascii=False))
+

@@ -1,5 +1,5 @@
 ﻿import os, time, asyncio, sys
-sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(file), '..')))
+sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 from core.memory import Memory
 
 async def main():
@@ -20,5 +20,6 @@ async def main():
             next_hl = now + hl_sec
         await asyncio.sleep(0.1)
 
-if name == "main":
+if __name__ == "__main__":
     asyncio.run(main())
+
