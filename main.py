@@ -267,8 +267,13 @@ async def main():
     _watch_task("mem_rotate_loop", rot_task)
 
     # Bridge control topics from SQLite to the bus (durable -> live)
-    ctrl_topics = ["chat/message", "user/text", "task/new", "task/exec", "log/resummarize", "system/health", "system/heartbeat"]
+    ctrl_topics = ["user/text", "task/new", "task/exec", "log/resummarize", "system/health", "system/heartbeat"]
     ctrl_task = asyncio.create_task(bridge_topics_to_bus(bus, ctrl_topics, poll_sec=1.0), name="bridge_topics_to_bus")
+    _watch_task("bridge_topics_to_bus", ctrl_task)
+
+    chat_task = asyncio.create_task(bridge_chat_to_bus(bus, poll_sec=1.0), name="bridge_chat_to_bus")
+    _watch_task("bridge_chat_to_bus", chat_task)
+
 # Periodic service loops: heartbeat, health check, resummarize
     async def _heartbeat_loop():
         try:
