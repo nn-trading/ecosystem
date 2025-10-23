@@ -1,4 +1,4 @@
-# Logs and runtime artifacts
+﻿# Logs and runtime artifacts
 workspace/logs/*.jsonl
 workspace/logs/*.jsonl.bak
 logs/*.log
@@ -13,4 +13,5 @@ pycache/
 
 # Backups
 C:/bots/backups/
+
 
