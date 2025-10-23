@@ -269,16 +269,6 @@ async def main():
     # Bridge control topics from SQLite to the bus (durable -> live)
     ctrl_topics = ["chat/message", "user/text", "task/new", "task/exec", "log/resummarize", "system/health", "system/heartbeat"]
     ctrl_task = asyncio.create_task(bridge_topics_to_bus(bus, ctrl_topics, poll_sec=1.0), name="bridge_topics_to_bus")
-
-    async def _chat_to_tasknew_dispatcher():
-        async for env in bus.subscribe("chat/message"):
-            payload = env.payload if isinstance(env.payload, dict) else (env.payload or {})
-            text = str(payload.get("text") or payload.get("content") or "")
-            if text:
-                await bus.publish("task/new", {"text": text}, sender="Main", job_id=env.job_id)
-
-    dispatch_task = asyncio.create_task(_chat_to_tasknew_dispatcher(), name="chat_to_tasknew")
-    _watch_task("chat_to_tasknew", dispatch_task)
 # Periodic service loops: heartbeat, health check, resummarize
     async def _heartbeat_loop():
         try:
