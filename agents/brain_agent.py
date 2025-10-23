@@ -50,16 +50,34 @@ def _parse_actions(text: str) -> List[Dict[str, Any]]:
     asked_copy  = (" paste " not in s) and ((" copy " in s) or ("ctrl+c" in s)) or (" then copy" in s)
     asked_paste = (" paste " in s) or ("ctrl+v" in s) or (" then paste" in s)
 
-    for m in re.finditer(r'\btype\s+"([^"]*)"', t, flags=re.IGNORECASE):
-        steps.append({"type": "tool", "tool": "ui.type_text", "args": {"text": m.group(1)}})
-        typed_any = True
+    # 1) type "quoted text"
+    for m in re.finditer(r'\btype\s+[\"]([^\"]+)[\"]', t, flags=re.IGNORECASE):
+        val = m.group(1).strip()
+        if val:
+            steps.append({"type": "tool", "tool": "ui.type_text", "args": {"text": val}})
+            typed_any = True
+
+    # 2) type exactly: <text>  OR  type: <text>
+    m = re.search(r'\btype(?:\s+exactly)?\s*:\s*([^\r\n]+)', t, flags=re.IGNORECASE)
+    if m:
+        val = m.group(1).strip()
+        # stop at then/and if present
+        val = re.split(r'\s+(?:then|and)\s+', val, maxsplit=1, flags=re.IGNORECASE)[0].strip()
+        if val:
+            steps.append({"type": "tool", "tool": "ui.type_text", "args": {"text": val}})
+            typed_any = True
+
+    # 3) type <word> (single token fallback)
     for m in re.finditer(r'\btype\s+([^\s,;]+)', t, flags=re.IGNORECASE):
-        val = m.group(1)
-        if val.startswith('"') or val.startswith("'"):
+        val = (m.group(1) or "").strip()
+        if not val or val.startswith('"') or val.startswith("'"):
+            continue
+        if val.lower() == "exactly":
             continue
         steps.append({"type": "tool", "tool": "ui.type_text", "args": {"text": val}})
         typed_any = True
 
+    # ctrl+<key> combos
     for m in re.finditer(r'\bctrl\+([a-z])\b', t, flags=re.IGNORECASE):
         key = m.group(1).lower()
         steps.append({"type": "tool", "tool": "ui.hotkey", "args": {"keys": ["ctrl", key]}})
@@ -83,7 +101,6 @@ def _parse_actions(text: str) -> List[Dict[str, Any]]:
         steps.append({"type": "tool", "tool": "uimacros.paste_clipboard", "args": {}})
 
     return steps
-
 class BrainAgent:
     def __init__(self, name: str, bus: Any, llm: Any, memory: Any, tools: Any):
         self.name = name
