@@ -1,5 +1,5 @@
 ﻿import os, sys, json, subprocess
-sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(file), "..")))
+sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
 from core.memory import Memory
 
 def tail_bytes(path, n, block_size=8*1024*1024):
@@ -58,7 +58,7 @@ def main():
     hb_tail = hb_tail[-3:]
     hl_tail = hl_tail[-3:]
 
-    root = os.path.abspath(os.path.join(os.path.dirname(file), ".."))
+    root = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
     pid_path = os.path.join(root, "logs", "headless_pid.txt")
     alive = check_headless_alive(pid_path) if os.path.exists(pid_path) else False
 
@@ -72,5 +72,7 @@ def main():
     }
     print(json.dumps(out, ensure_ascii=False))
 
-if name == "main":
+if __name__ == "__main__":
     main()
+
+
