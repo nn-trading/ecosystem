@@ -206,9 +206,12 @@ async def input_loop(bus: EventBus, llm: LLMClient, tools, memory: Memory):
         # Normal user input -> Comms
         print(f"Me: {s}")
         await bus.publish("user/text", {"text": s}, sender="User")
-
-
 async def main():
+    # Ensure process CWD is the repo root so EventLog paths resolve correctly
+    try:
+        os.chdir(os.path.dirname(os.path.abspath(file)))
+    except Exception:
+        pass
     # Assistant-level auto-resume log entry
     _append_assistant_jsonl({"ts": _iso_now(), "event": "ecosys_start", "note": "bootstrap main()"})
 
