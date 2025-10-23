@@ -6,9 +6,11 @@ logs/headless_pid.txt
 logs/loop.log
 logs/transcripts/
 logs/probes/
-
 # Python/cache
 pycache/
 *.pyc
 # Backups
 C:/bots/backups/
+unz/
+var/
+workspace.zip
