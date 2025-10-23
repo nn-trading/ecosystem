@@ -71,8 +71,10 @@ def _parse_actions(text: str) -> List[Dict[str, Any]]:
             if val:
                 typed_texts.append(val)
 
+    # Paste the requested text to avoid lost characters
     for val in typed_texts:
-        steps.append({"type": "tool", "tool": "ui.type_text", "args": {"text": val}})
+        steps.append({"type": "tool", "tool": "clipboard.set_text", "args": {"text": val}})
+        steps.append({"type": "tool", "tool": "ui.hotkey", "args": {"keys": ["ctrl", "v"]}})
         typed_any = True
 
     # ctrl+<key> combos
