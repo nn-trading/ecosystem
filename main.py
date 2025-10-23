@@ -271,47 +271,19 @@ async def main():
     ctrl_task = asyncio.create_task(bridge_topics_to_bus(bus, ctrl_topics, poll_sec=1.0), name="bridge_topics_to_bus")
     _watch_task("bridge_topics_to_bus", ctrl_task)
 
-    async def _hot_jsonl_pump():
-        import os, json, asyncio
-        hot = os.path.join(os.getcwd(), "workspace", "logs", "events.jsonl")
-        os.makedirs(os.path.dirname(hot), exist_ok=True)
-        # Create the file if it doesn't exist
-        try:
-            open(hot, "a", encoding="utf-8").close()
-        except Exception:
-            pass
-        offset = 0
-        try:
-            with open(hot, "r", encoding="utf-8") as f:
-                f.seek(0, os.SEEK_END)
-                offset = f.tell()
-        except Exception:
-            offset = 0
-        while True:
-            try:
-                with open(hot, "r", encoding="utf-8") as f:
-                    f.seek(offset)
-                    for line in f:
-                        offset = f.tell()
-                        try:
-                            obj = json.loads(line)
-                        except Exception:
-                            continue
-                        topic = (obj or {}).get("topic") or ""
-                        payload = (obj or {}).get("payload") or {}
-                        if topic == "chat/message":
-                            role = (payload.get("role") or "").strip().lower()
-                            text = (payload.get("text") or "").strip()
-                            if text:
-                                await bus.publish("user/text", {"text": text}, sender="HotJsonlPump")
-                await asyncio.sleep(0.8)
-            except asyncio.CancelledError:
-                break
-            except Exception:
-                await asyncio.sleep(1.0)
+    chat_task = asyncio.create_task(bridge_chat_to_bus(bus, poll_sec=1.0), name="bridge_chat_to_bus")
+    _watch_task("bridge_chat_to_bus", chat_task)
 
-    hot_task = asyncio.create_task(_hot_jsonl_pump(), name="hot_jsonl_pump")
-    _watch_task("hot_jsonl_pump", hot_task)
+    async def _user_text_to_task_new():
+        async for env in bus.subscribe("user/text"):
+            payload = env.payload if isinstance(env.payload, dict) else (env.payload or {})
+            text = str(payload.get("text") or payload.get("content") or "")
+            if text:
+                await bus.publish("task/new", {"text": text}, sender="Main", job_id=env.job_id)
+
+    user_text_task = asyncio.create_task(_user_text_to_task_new(), name="user_text_to_task_new")
+    _watch_task("user_text_to_task_new", user_text_task)
+
 
 # Periodic service loops: heartbeat, health check, resummarize
     async def _heartbeat_loop():
