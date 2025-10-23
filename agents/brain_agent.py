@@ -146,35 +146,40 @@ class BrainAgent:
             return {"ok": False, "error": f"tool '{tool_name}' not callable: {e}"}
 
     def _plan_for_text(self, text: str) -> Dict[str, Any]:
-        text = (text or "").strip()
-        if not text:
-            return {
-                "title": "Fallback Plan",
-                "rationale": "Empty message; inspect workspace",
-                "steps": [
-                    {"type": "reason", "description": "No text provided; inspecting workspace"},
-                    {"type": "tool", "tool": "fs.ls", "args": {"path": "C:/bots/ecosys"}},
-                ],
-            }
-        m = OPEN_RX.search(text)
-        if m:
-            exe  = m.group(1).strip().strip('"').strip("'")
-            tail = (m.group(2) or "").strip()
-            steps: List[Dict[str, Any]] = [{"type": "tool", "tool": "sysctl.launch", "args": {"exe": exe, "args": []}}]
-            steps.extend(_parse_actions(tail))
-            title = f"Launch {exe}" + (f" and actions: {tail}" if tail else "")
-            return {"title": title, "rationale": "Launch then execute UI actions.", "steps": steps}
-        actions = _parse_actions(text)
-        if actions:
-            return {"title": "UI Actions", "rationale": "Execute requested UI keystrokes.", "steps": actions}
+    text = (text or "").strip()
+    if not text:
         return {
             "title": "Fallback Plan",
-            "rationale": "No explicit tool match; inspecting workspace",
+            "rationale": "Empty message; inspect workspace",
             "steps": [
-                {"type": "reason", "description": "No tool matched; inspecting workspace"},
+                {"type": "reason", "description": "No text provided; inspecting workspace"},
                 {"type": "tool", "tool": "fs.ls", "args": {"path": "C:/bots/ecosys"}},
             ],
         }
+    m = OPEN_RX.search(text)
+    if m:
+        exe  = m.group(1).strip().strip('"').strip("'")
+        tail = (m.group(2) or "").strip()
+        steps: List[Dict[str, Any]] = [
+            {"type": "tool", "tool": "sysctl.launch", "args": {"exe": exe, "args": []}}
+        ]
+        # Focus the app window so subsequent UI actions (paste/shortcuts) hit the right window
+        hint = "Notepad" if ("notepad" in (exe or "").lower()) else ((exe.split("\\")[-1].split("/")[-1].split(".")[0]) if exe else "Notepad")
+        steps.append({"type": "tool", "tool": "win.activate_title_contains", "args": {"substr": hint}})
+        steps.extend(_parse_actions(tail))
+        title = f"Launch {exe}" + (f" and actions: {tail}" if tail else "")
+        return {"title": title, "rationale": "Launch then execute UI actions.", "steps": steps}
+    actions = _parse_actions(text)
+    if actions:
+        return {"title": "UI Actions", "rationale": "Execute requested UI actions.", "steps": actions}
+    return {
+        "title": "Fallback Plan",
+        "rationale": "No explicit tool match; inspecting workspace",
+        "steps": [
+            {"type": "reason", "description": "No tool matched; inspecting workspace"},
+            {"type": "tool", "tool": "fs.ls", "args": {"path": "C:/bots/ecosys"}},
+        ],
+    }
 
     async def _emit_result_text(self, text: str) -> None:
         text = (text or "").rstrip("\r\n")
