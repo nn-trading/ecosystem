@@ -52,7 +52,7 @@ def _parse_actions(text: str) -> List[Dict[str, Any]]:
 
     # 1) type "quoted text"
     for m in re.finditer(r'\btype\s+[\"]([^\"]+)[\"]', t, flags=re.IGNORECASE):
-        val = m.group(1).strip()
+        val = (m.group(1) or "").strip()
         if val:
             steps.append({"type": "tool", "tool": "ui.type_text", "args": {"text": val}})
             typed_any = True
@@ -60,17 +60,16 @@ def _parse_actions(text: str) -> List[Dict[str, Any]]:
     # 2) type exactly: <text>  OR  type: <text>
     m = re.search(r'\btype(?:\s+exactly)?\s*:\s*([^\r\n]+)', t, flags=re.IGNORECASE)
     if m:
-        val = m.group(1).strip()
-        # stop at then/and if present
+        val = (m.group(1) or "").strip()
         val = re.split(r'\s+(?:then|and)\s+', val, maxsplit=1, flags=re.IGNORECASE)[0].strip()
         if val:
             steps.append({"type": "tool", "tool": "ui.type_text", "args": {"text": val}})
             typed_any = True
 
-    # 3) type <word> (single token fallback)
-    for m in re.finditer(r'\btype\s+([^\s,;]+)', t, flags=re.IGNORECASE):
-        val = (m.group(1) or "").strip()
-        if not val or val.startswith('"') or val.startswith("'"):
+    # 3) type <word> (single token fallback)  skip 'exactly' and 'exactly:' and tokens ending with ':'
+    for m in re.finditer(r'\btype\s+([^\s,;:]+)', t, flags=re.IGNORECASE):
+        val = (m.group(1) or "").strip().strip('"').strip("'").rstrip(":")
+        if not val:
             continue
         if val.lower() == "exactly":
             continue
