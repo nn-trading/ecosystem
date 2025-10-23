@@ -37,7 +37,8 @@ Write-Host "[5/5] Commit locally (no push)..."
 git -C "$repo" config --get user.name >$null 2>&1; if ($LASTEXITCODE -ne 0) { git -C "$repo" config user.name "openhands" }
 git -C "$repo" config --get user.email >$null 2>&1; if ($LASTEXITCODE -ne 0) { git -C "$repo" config user.email "openhands@all-hands.dev" }
 git -C "$repo" add -A
-git -C "$repo" commit -m "ops: resume_run.ps1 with transcript; probe snapshots; rotate+probe hardened" -m "Co-authored-by: openhands <openhands@all-hands.dev>" || Write-Host "No changes to commit."
+git -C "$repo" commit -m "ops: resume_run.ps1 with transcript; probe snapshots; rotate+probe hardened" -m "Co-authored-by: openhands <openhands@all-hands.dev>"
+if ($LASTEXITCODE -ne 0) { Write-Host "No changes to commit." }
 
 Stop-Transcript | Out-Null
 Write-Host "Transcript: $transcript"
