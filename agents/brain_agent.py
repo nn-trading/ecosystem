@@ -165,7 +165,8 @@ class BrainAgent:
                 {"type": "tool", "tool": "sysctl.launch", "args": {"exe": exe, "args": []}}
             ]
             hint = "Notepad" if ("notepad" in (exe or "").lower()) else ((exe.split("\\")[-1].split("/")[-1].split(".")[0]) if exe else "Notepad")
-            steps.append({"type": "tool", "tool": "win.activate_title_contains", "args": {"substr": hint}})
+            steps.append({"type": "tool", "tool": "win.wait_title_contains", "args": {"substr": hint, "timeout": 6}})
+        \1
             steps.extend(_parse_actions(tail))
             title = f"Launch {exe}" + (f" and actions: {tail}" if tail else "")
             return {"title": title, "rationale": "Launch then execute UI actions.", "steps": steps}

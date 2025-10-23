@@ -251,11 +251,16 @@ async def main():
     rec_task = asyncio.create_task(bus_recorder(bus, memory), name="bus_recorder")
     _watch_task("bus_recorder", rec_task)
 
-    # Start a bridge that reflects chat/message events in SQLite to the bus
-    bridge_task = asyncio.create_task(bridge_chat_to_bus(bus), name="bridge_chat_to_bus")
-    _watch_task("bridge_chat_to_bus", bridge_task)
+    # Start a bridge that reflects chat/message events in SQLite to the bus\1
+    async def _user_text_to_task_new():
+        async for env in bus.subscribe("user/text"):
+            payload = env.payload if isinstance(env.payload, dict) else {}
+            text = str(payload.get("text") or payload.get("content") or "")
+            await bus.publish("task/new", {"text": text}, sender="Main", job_id=env.job_id)
 
-    # Periodic rotation to keep events.jsonl bounded
+    user_text_task = asyncio.create_task(_user_text_to_task_new(), name="user_text_to_task_new")
+    _watch_task("user_text_to_task_new", user_text_task)
+# Periodic rotation to keep events.jsonl bounded
     async def _rotate_loop():
         while True:
             try:
