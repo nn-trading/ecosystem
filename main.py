@@ -282,13 +282,14 @@ async def main():
             try:
                 payload = env.payload if isinstance(env.payload, dict) else (env.payload or {})
                 text = str(payload.get("text") or payload.get("content") or "")
+                if not text:
+                    continue
                 tl = text.lower()
                 if "open notepad" in tl and "type exactly:" in tl:
-                    msg = text
-                    part = tl.split("type exactly:", 1)[1].strip()
-                    # Recover original casing from the end of msg
                     idx = tl.find("type exactly:")
-                    content = msg[idx + len("type exactly:"):].strip().strip('"').strip("'")
+                    content = text[idx + len("type exactly:"):].strip().strip('"').strip("'")
+                    snippet = (content[:40] + "") if len(content) > 40 else content
+                    await bus.publish("ui/print", {"text": f"[Main] Emergency: detected Notepad paste task: '{snippet}'"}, sender="Main", job_id=env.job_id)
 
                     steps = [
                         {"type":"tool","tool":"sysctl.launch","args":{"cmd":"notepad"}},
@@ -296,20 +297,20 @@ async def main():
                         {"type":"tool","tool":"win.activate_title_contains","args":{"substr":"Notepad"}},
                         {"type":"tool","tool":"clipboard.set_text","args":{"text": content}},
                         {"type":"tool","tool":"win.activate_title_contains","args":{"substr":"Notepad"}},
-                        {"type":"tool","tool":"ui.hotkey","args":{"keys":["ctrl","v"],"combo":"ctrl+v"}},
+                        {"type":"tool","tool":"ui.hotkey","args":{"combo":"ctrl+v"}},
                         {"type":"tool","tool":"win.activate_title_contains","args":{"substr":"Notepad"}},
-                        {"type":"tool","tool":"ui.hotkey","args":{"keys":["ctrl","v"],"combo":"ctrl+v"}},
-                        {"type":"tool","tool":"ui.hotkey","args":{"keys":["ctrl","a"],"combo":"ctrl+a"}},
-                        {"type":"tool","tool":"ui.hotkey","args":{"keys":["ctrl","c"],"combo":"ctrl+c"}}
+                        {"type":"tool","tool":"ui.hotkey","args":{"combo":"ctrl+v"}},
+                        {"type":"tool","tool":"win.activate_title_contains","args":{"substr":"Notepad"}},
+                        {"type":"tool","tool":"ui.hotkey","args":{"combo":"ctrl+v"}},
+                        {"type":"tool","tool":"ui.hotkey","args":{"combo":"ctrl+a"}},
+                        {"type":"tool","tool":"ui.hotkey","args":{"combo":"ctrl+c"}}
                     ]
                     plan = {"title":"Emergency Notepad Paste","steps":steps}
-                    await bus.publish("ui/print", {"text": "[Main] Emergency executor engaged for Notepad paste."}, sender="Main", job_id=env.job_id)
                     await bus.publish("task/plan", plan, sender="Main", job_id=env.job_id)
                     await bus.publish("task/exec", plan, sender="Main", job_id=env.job_id)
             except Exception:
                 pass
-
-    emerg_task = asyncio.create_task(_emergency_notepad_exec(), name="emergency_notepad_exec")
+emerg_task = asyncio.create_task(_emergency_notepad_exec(), name="emergency_notepad_exec")
     _watch_task("emergency_notepad_exec", emerg_task)
 
     await bus.publish("ui/print", {"text": f"[Main] Bridges ready. CWD={os.getcwd()}"}, sender="Main")
@@ -433,4 +434,5 @@ if __name__ == "__main__":
         asyncio.run(main())
     except KeyboardInterrupt:
         pass
+
 
