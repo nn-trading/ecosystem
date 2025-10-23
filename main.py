@@ -276,6 +276,42 @@ async def main():
 
     chat_task = asyncio.create_task(bridge_chat_to_bus(bus, poll_sec=1.0), name="bridge_chat_to_bus")
     _watch_task("bridge_chat_to_bus", chat_task)
+
+    async def _emergency_notepad_exec():
+        async for env in bus.subscribe("task/new"):
+            try:
+                payload = env.payload if isinstance(env.payload, dict) else (env.payload or {})
+                text = str(payload.get("text") or payload.get("content") or "")
+                tl = text.lower()
+                if "open notepad" in tl and "type exactly:" in tl:
+                    msg = text
+                    part = tl.split("type exactly:", 1)[1].strip()
+                    # Recover original casing from the end of msg
+                    idx = tl.find("type exactly:")
+                    content = msg[idx + len("type exactly:"):].strip().strip('"').strip("'")
+
+                    steps = [
+                        {"type":"tool","tool":"sysctl.launch","args":{"cmd":"notepad"}},
+                        {"type":"tool","tool":"win.activate_title_contains","args":{"substr":"Notepad"}},
+                        {"type":"tool","tool":"win.activate_title_contains","args":{"substr":"Notepad"}},
+                        {"type":"tool","tool":"clipboard.set_text","args":{"text": content}},
+                        {"type":"tool","tool":"win.activate_title_contains","args":{"substr":"Notepad"}},
+                        {"type":"tool","tool":"ui.hotkey","args":{"keys":["ctrl","v"],"combo":"ctrl+v"}},
+                        {"type":"tool","tool":"win.activate_title_contains","args":{"substr":"Notepad"}},
+                        {"type":"tool","tool":"ui.hotkey","args":{"keys":["ctrl","v"],"combo":"ctrl+v"}},
+                        {"type":"tool","tool":"ui.hotkey","args":{"keys":["ctrl","a"],"combo":"ctrl+a"}},
+                        {"type":"tool","tool":"ui.hotkey","args":{"keys":["ctrl","c"],"combo":"ctrl+c"}}
+                    ]
+                    plan = {"title":"Emergency Notepad Paste","steps":steps}
+                    await bus.publish("ui/print", {"text": "[Main] Emergency executor engaged for Notepad paste."}, sender="Main", job_id=env.job_id)
+                    await bus.publish("task/plan", plan, sender="Main", job_id=env.job_id)
+                    await bus.publish("task/exec", plan, sender="Main", job_id=env.job_id)
+            except Exception:
+                pass
+
+    emerg_task = asyncio.create_task(_emergency_notepad_exec(), name="emergency_notepad_exec")
+    _watch_task("emergency_notepad_exec", emerg_task)
+
     await bus.publish("ui/print", {"text": f"[Main] Bridges ready. CWD={os.getcwd()}"}, sender="Main")
 
 # Periodic service loops: heartbeat, health check, resummarize
