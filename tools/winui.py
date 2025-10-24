@@ -1,10 +1,10 @@
 # C:\bots\ecosys\tools\winui.py
 from __future__ import annotations
-import subprocess
+import subprocess, time
 from typing import Any, Dict, Optional
 
 _PS_FOCUS = r'''
-param([int]$Pid = 0, [string]$TitleSubstr = "")
+param([int]$TargetPid = 0, [string]$TitleSubstr = "")
 Add-Type -Namespace Win -Name Native -MemberDefinition @"
 using System;
 using System.Runtime.InteropServices;
@@ -14,8 +14,8 @@ public static class Native {
 }
 "@
 $target = $null
-if ($Pid -gt 0) {
-  $p = Get-Process | Where-Object { $_.Id -eq $Pid } | Select-Object -First 1
+if ($TargetPid -gt 0) {
+  $p = Get-Process | Where-Object { $_.Id -eq $TargetPid } | Select-Object -First 1
   if ($p -and $p.MainWindowHandle -ne 0) { $target = $p }
 }
 elseif ($TitleSubstr -ne "") {
@@ -36,10 +36,70 @@ if ($null -ne $target) {
 '''
 
 def focus_window(pid: Optional[int] = None, title_substr: Optional[str] = None) -> Dict[str, Any]:
-    args = ["powershell","-NoProfile","-Sta","-Command", _PS_FOCUS, "-Pid", str(pid or 0), "-TitleSubstr", title_substr or ""]
-    c = subprocess.run(args, capture_output=True, text=True, encoding="utf-8")
-    out = (c.stdout or "").strip()
-    return {"ok": out.startswith("ok:"), "stdout": out, "stderr": c.stderr, "code": c.returncode}
+    # Call the PowerShell helper and retry briefly if needed
+    args = ["powershell","-NoProfile","-Sta","-Command", _PS_FOCUS, "-TargetPid", str(pid or 0), "-TitleSubstr", title_substr or ""]
+    out = ""; err = ""; code = -1
+    for _ in range(3):
+        c = subprocess.run(args, capture_output=True, text=True, encoding="utf-8")
+        out = (c.stdout or "").strip(); err = c.stderr; code = c.returncode
+        if out.startswith("ok:"):
+            break
+        time.sleep(0.2)
+    return {"ok": out.startswith("ok:"), "stdout": out, "stderr": err, "code": code}
+
+
+
+def activate_pid(pid: int) -> Dict[str, Any]:
+    return focus_window(pid=pid)
+
+
+def activate_title_contains(substr: str) -> Dict[str, Any]:
+    return focus_window(title_substr=substr or "")
+
+
+def wait_title_contains(substr: str, timeout: int = 10) -> Dict[str, Any]:
+    try:
+        t_end = time.time() + max(1, int(timeout))
+    except Exception:
+        t_end = time.time() + 10
+    last: Dict[str, Any] = {"ok": False, "error": "not found"}
+    while time.time() < t_end:
+        r = focus_window(title_substr=substr or "")
+        last = r if isinstance(r, dict) else {"ok": False}
+        if last.get("ok"):
+            return {"ok": True, "found": True, "title": last.get("stdout", "")}
+        time.sleep(0.2)
+    last["timeout"] = True
+    return last
+
+
+
+def activate_pid(pid: int) -> Dict[str, Any]:
+    return focus_window(pid=pid)
+
+
+def activate_title_contains(substr: str) -> Dict[str, Any]:
+    return focus_window(title_substr=substr or "")
+
+
+def wait_title_contains(substr: str, timeout: int = 10) -> Dict[str, Any]:
+    try:
+        t_end = time.time() + max(1, int(timeout))
+    except Exception:
+        t_end = time.time() + 10
+    last: Dict[str, Any] = {"ok": False, "error": "not found"}
+    while time.time() < t_end:
+        r = focus_window(title_substr=substr or "")
+        last = r if isinstance(r, dict) else {"ok": False}
+        if last.get("ok"):
+            return {"ok": True, "found": True, "title": last.get("stdout", "")}
+        time.sleep(0.2)
+    last["timeout"] = True
+    return last
 
 def register(tools) -> None:
     tools.add("win.focus_window", focus_window, desc="Focus a window (by pid or title substring, or newest with a main window)")
+    tools.add("win.activate_pid", activate_pid, desc="Activate window by pid")
+    tools.add("win.activate_title_contains", activate_title_contains, desc="Activate window by title substring")
+    tools.add("win.wait_title_contains", wait_title_contains, desc="Wait for window by title substring")
+
