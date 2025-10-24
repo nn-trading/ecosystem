@@ -310,10 +310,11 @@ async def main():
                     await bus.publish("task/exec", plan, sender="Main", job_id=env.job_id)
             except Exception:
                 pass
-emerg_task = asyncio.create_task(_emergency_notepad_exec(), name="emergency_notepad_exec")
+
+    emerg_task = asyncio.create_task(_emergency_notepad_exec(), name="emergency_notepad_exec")
     _watch_task("emergency_notepad_exec", emerg_task)
 
-    await bus.publish("ui/print", {"text": f"[Main] Bridges ready. CWD={os.getcwd()}"}, sender="Main")
+await bus.publish("ui/print", {"text": f"[Main] Bridges ready. CWD={os.getcwd()}"}, sender="Main")
 
 # Periodic service loops: heartbeat, health check, resummarize
     async def _heartbeat_loop():
@@ -434,6 +435,7 @@ if __name__ == "__main__":
         asyncio.run(main())
     except KeyboardInterrupt:
         pass
+
 
 
 
