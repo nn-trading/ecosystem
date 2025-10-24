@@ -18,10 +18,16 @@ def _ps_get_clip() -> Dict[str, Any]:
 
 def _ps_set_clip(text: str) -> Dict[str, Any]:
     try:
-        c = subprocess.run(
-            'powershell -Sta -NoProfile -Command "Set-Clipboard -Value ([Console]::In.ReadToEnd())"',
-            input=text, shell=True, capture_output=True, text=True, encoding="utf-8"
-        )
+        if text == "":
+            c = subprocess.run(
+                'powershell -Sta -NoProfile -Command "Set-Clipboard -Value \"\""',
+                shell=True, capture_output=True, text=True, encoding="utf-8"
+            )
+        else:
+            c = subprocess.run(
+                'powershell -Sta -NoProfile -Command "Set-Clipboard -Value ([Console]::In.ReadToEnd())"',
+                input=text, shell=True, capture_output=True, text=True, encoding="utf-8"
+            )
         if c.returncode == 0:
             return {"ok": True}
         return {"ok": False, "error": c.stderr or f"ps exited {c.returncode}"}
