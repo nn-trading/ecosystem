@@ -1,5 +1,5 @@
 ﻿# C:\bots\ecosys\main.py
-from future import annotations
+from __future__ import annotations
 import os, asyncio, textwrap, json, datetime, sqlite3, time
 from typing import List, Dict, Any
 
@@ -188,7 +188,7 @@ async def input_loop(bus: EventBus, llm: LLMClient, tools, memory: Memory):
 async def main():
     # Force working directory to repo root so EventLog paths resolve correctly
     try:
-        os.chdir(os.path.dirname(os.path.abspath(file)))
+        os.chdir(os.path.dirname(os.path.abspath(__file__)))
     except Exception:
         pass
 
@@ -263,7 +263,7 @@ async def main():
                     idx = tl.find("type exactly:")
                     content = text[idx + len("type exactly:"):].strip().strip('"').strip("'")
                     steps = [
-                        {"type":"tool","tool":"sysctl.launch","args":{"cmd":"notepad"}},
+                        {"type":"tool","tool":"sysctl.launch","args":{"exe":"notepad","args":[]}},
                         {"type":"tool","tool":"win.activate_title_contains","args":{"substr":"Notepad"}},
                         {"type":"tool","tool":"win.activate_title_contains","args":{"substr":"Notepad"}},
                         {"type":"tool","tool":"clipboard.set_text","args":{"text": content}},
@@ -398,7 +398,7 @@ async def main():
                 pass
         await asyncio.gather(*agent_tasks, *ui_tasks, rec_task, rot_task, hb_task, health_task, resum_task, emerg_task, ctrl_task, chat_task, return_exceptions=True)
 
-if name == "main":
+if __name__ == "__main__":
     try:
         asyncio.run(main())
     except KeyboardInterrupt:

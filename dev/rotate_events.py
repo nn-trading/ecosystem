@@ -1,5 +1,5 @@
 # dev/rotate_events.py
-import os, sys, json, asyncio, tempfile
+import os, sys, json, asyncio
 
 # Ensure repo root on PYTHONPATH
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
@@ -8,35 +8,27 @@ from core.memory import Memory, DEFAULT_KEEP_LAST
 
 
 def main():
-    keep = int(os.environ.get('KEEP_LAST', str(DEFAULT_KEEP_LAST)))
+    keep: int | None = None
+    if len(sys.argv) > 1:
+        try:
+            keep = int(sys.argv[1])
+        except Exception:
+            keep = None
+    if keep is None:
+        try:
+            keep = int(os.environ.get('KEEP_LAST', str(DEFAULT_KEEP_LAST)))
+        except Exception:
+            keep = DEFAULT_KEEP_LAST
+
     mem = Memory()
 
     async def run():
-        # Avoid full-file line counting on huge files; read tail only
-        tail_lines = mem._tail_lines(mem.events_path, keep)
-        # Write to temp and atomically replace
-        log_dir = os.path.dirname(mem.events_path)
-        fd, tmp_path = tempfile.mkstemp(prefix='events_', suffix='.jsonl', dir=log_dir)
-        os.close(fd)
-        with open(tmp_path, 'w', encoding='utf-8') as w:
-            for ln in tail_lines:
-                w.write(ln if ln.endswith('\n') else ln + '\n')
-        # Backup then replace
-        backup = mem.events_path + '.bak'
-        try:
-            if os.path.exists(backup):
-                os.remove(backup)
-        except Exception:
-            pass
-        os.replace(mem.events_path, backup)
-        os.replace(tmp_path, mem.events_path)
-        try:
-            os.remove(backup)
-        except Exception:
-            pass
+        old_count, new_count = await mem.rotate_keep_last(keep)
         payload = {
             'keep_last': keep,
-            'new_count': len(tail_lines),
+            'old_count': old_count,
+            'new_count': new_count,
+            'events_file': mem.events_path,
         }
         await mem.append_event('memory/rotate', payload, sender='rotate_events')
         print(json.dumps({'ok': True, **payload}, ensure_ascii=False))

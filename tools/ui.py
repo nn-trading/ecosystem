@@ -95,11 +95,17 @@ _SPECIALS = {
     "down": "{DOWN}",
 }
 
-def hotkey(keys: List[str]) -> Dict[str, Any]:
+def hotkey(keys: List[str] | None = None, combo: str | None = None) -> Dict[str, Any]:
     if not DANGER:
         return {"ok": False, "error": "danger_mode off"}
     _ensure_focus_lastpid()
-    keys = [k.lower() for k in keys]
+    if (not keys) and combo:
+        combo = combo.strip().lower()
+        parts = [p.strip() for p in combo.split("+") if p.strip()]
+        keys = parts
+    keys = [k.lower() for k in (keys or [])]
+    if not keys:
+        return {"ok": False, "error": "no keys/combo provided"}
     if keys == ["esc"]:
         return _ps_sendkeys(_SPECIALS["esc"])
     mods = ""

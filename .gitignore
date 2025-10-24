@@ -7,7 +7,7 @@ logs/loop.log
 logs/transcripts/
 logs/probes/
 # Python/cache
-pycache/
+__pycache__/
 *.pyc
 # Backups
 C:/bots/backups/

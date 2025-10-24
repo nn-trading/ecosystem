@@ -44,8 +44,9 @@ class AutofixAgent(BaseAgent):
                     bad = bad.strip()
                     tname = tname.strip()
                     # Inspect the registered tool function to find candidate params
-                    fn = self.tools._tools.get(tname) if hasattr(self.tools, "_tools") else None
-                    if not fn:
+                    tentry = self.tools._tools.get(tname) if hasattr(self.tools, "_tools") else None
+                    fn = (tentry.get("fn") if isinstance(tentry, dict) else tentry)
+                    if not callable(fn):
                         continue
                     try:
                         sig = inspect.signature(fn)
