@@ -1,9 +1,9 @@
-# C:\bots\ecosys\main.py
-from __future__ import annotations
+﻿# C:\bots\ecosys\main.py
+from future import annotations
 import os, asyncio, textwrap, json, datetime, sqlite3, time
-from typing import List
+from typing import List, Dict, Any
 
-ASSISTANT_CONFIG_PATH = os.environ.get("ASSISTANT_CONFIG_PATH", "C:\\bots\\assistant\\config.json")
+ASSISTANT_CONFIG_PATH = os.environ.get("ASSISTANT_CONFIG_PATH", r"C:\bots\assistant\config.json")
 
 def _load_assistant_config():
     try:
@@ -17,7 +17,7 @@ def _assistant_log_path(cfg):
         os.environ.get("ASSISTANT_LOG_DIR")
         or cfg.get("log_dir")
         or os.environ.get("ECOSYS_ASSISTANT_LOG_DIR")
-        or "C:\\bots\\assistant\\logs"
+        or r"C:\bots\assistant\logs"
     )
     try:
         os.makedirs(log_dir, exist_ok=True)
@@ -39,7 +39,7 @@ def _append_assistant_jsonl(obj: dict):
             line = json.dumps(obj, ensure_ascii=False) + "\n"
             f.write(line)
             try:
-                db = os.environ.get("ECOSYS_MEMORY_DB", cfg.get("memory_db") or r"C:\\bots\\data\\memory.db")
+                db = os.environ.get("ECOSYS_MEMORY_DB", cfg.get("memory_db") or r"C:\bots\data\memory.db")
                 con = sqlite3.connect(db)
                 cur = con.cursor()
                 cur.execute("CREATE TABLE IF NOT EXISTS kv (key TEXT PRIMARY KEY, value TEXT)")
@@ -55,12 +55,11 @@ def _append_assistant_jsonl(obj: dict):
 # --- Core ---
 from core.bus import EventBus
 from core.llm_client import LLMClient
-from core.tools import REGISTRY as ToolsRegistry   # << use the SINGLETON
+from core.tools import REGISTRY as ToolsRegistry
 from core.memory import Memory, DEFAULT_KEEP_LAST
 from core.assistant_loader import AssistantLoader
-from core.event_bridge import bridge_chat_to_bus
+from core.event_bridge import bridge_chat_to_bus, bridge_topics_to_bus
 from memory.eventlog import EventLog
-from core.event_bridge import bridge_topics_to_bus
 
 # --- Agents ---
 from agents.comms_agent import CommsAgent
@@ -81,7 +80,6 @@ BANNER = """
 GPT-5 Desktop Ecosystem ready. Type your instruction. '/status' or '/tools' or '/summary' or '/memstats' or '/model' or '/setmodel <name>' or '/resummarize' or 'exit'
 --------------------------------------------------------------------------------
 """.strip()
-
 
 async def ui_printer(bus: EventBus):
     async for env in bus.subscribe("ui/print"):
@@ -107,15 +105,10 @@ async def summary_printer(bus: EventBus):
                 print(f"AI: [Summary] {safe}")
 
 async def bus_recorder(bus: EventBus, memory: Memory):
-    """
-    Record every bus event immediately to Memory (events.jsonl).
-    This ensures we capture every action right after it occurs.
-    """
     async for env in bus.subscribe_prefix(""):
         try:
             await memory.append_event(env.topic, env.payload, sender=env.sender, job_id=env.job_id)
         except Exception:
-            # Never crash recorder; best-effort logging only
             pass
 
 def _watch_task(label: str, task: asyncio.Task):
@@ -131,55 +124,44 @@ def _watch_task(label: str, task: asyncio.Task):
             print(f"AI: [FATAL] {label} crashed: {exc!r}")
     task.add_done_callback(_cb)
 
-
 async def input_loop(bus: EventBus, llm: LLMClient, tools, memory: Memory):
     try:
         print(BANNER)
     except Exception:
-        print("GPT-5 Desktop Ecosystem ready. Type your instruction. '/status' or '/tools' or '/summary' or '/memstats' or '/model' or '/setmodel <name>' or '/resummarize' or 'exit'")
+        print("GPT-5 Desktop Ecosystem ready.")
     loop = asyncio.get_running_loop()
-
     async def ainput(prompt: str = "") -> str:
         return await loop.run_in_executor(None, lambda: input(prompt))
-
     while True:
         try:
             line = await ainput("")
         except (EOFError, KeyboardInterrupt):
             break
-
         s = (line or "").strip()
         if not s:
             continue
-
         if s.startswith("/"):
             parts = s.split(" ", 1)
-            cmd = parts[0]
-            arg = parts[1] if len(parts) > 1 else ""
+            cmd = parts[0]; arg = parts[1] if len(parts) > 1 else ""
             _append_assistant_jsonl({"ts": _iso_now(), "event": "user_command", "cmd": cmd, "arg": arg})
-
             if cmd == "/tools":
                 try:
                     avail = tools.available() if hasattr(tools, "available") else []
                 except Exception:
                     avail = []
-                print(f"AI: Tools: {', '.join(avail)}")
-                continue
+                print(f"AI: Tools: {', '.join(avail)}"); continue
             if cmd == "/status":
-                print("AI: System online. Agents running.")
-                continue
+                print("AI: System online. Agents running."); continue
             if cmd == "/memstats":
                 st = memory.stats()
                 pretty = "\n".join(f"- {k}: {v}" for k, v in st.items())
-                print("AI: Memstats:\n" + textwrap.indent(pretty, "    "))
-                continue
+                print("AI: Memstats:\n" + textwrap.indent(pretty, "    ")); continue
             if cmd == "/summary":
                 await bus.publish("ui/print", {"text": "[Main] Requesting recent summary..."}, sender="Main")
                 await bus.publish("task/new", {"text": "/summary (request recent summary)"}, sender="Main")
                 continue
             if cmd == "/model":
-                print(f"AI: Model: {getattr(llm, 'model', None)}")
-                continue
+                print(f"AI: Model: {getattr(llm, 'model', None)}"); continue
             if cmd == "/setmodel":
                 name = arg.strip() or os.environ.get("LLM_MODEL", "")
                 if not name:
@@ -199,28 +181,24 @@ async def input_loop(bus: EventBus, llm: LLMClient, tools, memory: Memory):
                 await bus.publish("ui/print", {"text": "[Main] Resummarize requested."}, sender="Main")
                 await bus.publish("log/resummarize", {"hint": "user requested"}, sender="Main")
                 continue
-
-            print(f"AI: Unknown command '{cmd}'.")
-            continue
-
-        # Normal user input -> Comms
+            print(f"AI: Unknown command '{cmd}'."); continue
         print(f"Me: {s}")
         await bus.publish("user/text", {"text": s}, sender="User")
+
 async def main():
-    # Ensure process CWD is the repo root so EventLog paths resolve correctly
+    # Force working directory to repo root so EventLog paths resolve correctly
     try:
         os.chdir(os.path.dirname(os.path.abspath(file)))
     except Exception:
         pass
-    # Assistant-level auto-resume log entry
+
     _append_assistant_jsonl({"ts": _iso_now(), "event": "ecosys_start", "note": "bootstrap main()"})
 
     bus = EventBus()
     llm = LLMClient(timeout_sec=int(os.environ.get("LLM_TIMEOUT_SEC", "45")))
     memory = Memory()
-    tools = ToolsRegistry   # << IMPORTANT: this is the shared singleton with all registrations
+    tools = ToolsRegistry
 
-    # Centralize tool tracing via ToolsRegistry -> publish to EventBus
     try:
         def _tools_trace(topic: str, payload: dict):
             try:
@@ -233,8 +211,7 @@ async def main():
     except Exception:
         pass
 
-    # Start UI consumers first
-    # Assistant resume context
+    # Assistant resume
     try:
         loader = AssistantLoader()
         await loader.publish_resume(bus)
@@ -244,18 +221,14 @@ async def main():
     ui_tasks: List[asyncio.Task] = []
     t1 = asyncio.create_task(ui_printer(bus), name="ui_printer")
     t2 = asyncio.create_task(summary_printer(bus), name="summary_printer")
-    _watch_task("ui_printer", t1)
-    _watch_task("summary_printer", t2)
+    _watch_task("ui_printer", t1); _watch_task("summary_printer", t2)
     ui_tasks += [t1, t2]
-
     await asyncio.sleep(0)
 
-    # Start a recorder that logs every bus event to memory
+    # Recorder and rotation
     rec_task = asyncio.create_task(bus_recorder(bus, memory), name="bus_recorder")
     _watch_task("bus_recorder", rec_task)
 
-    # Start a bridge that reflects chat/message events in SQLite to the bus
-# Periodic rotation to keep events.jsonl bounded
     async def _rotate_loop():
         while True:
             try:
@@ -264,19 +237,20 @@ async def main():
             except asyncio.CancelledError:
                 break
             except Exception:
-                # never crash
                 await asyncio.sleep(60)
     rot_task = asyncio.create_task(_rotate_loop(), name="mem_rotate_loop")
     _watch_task("mem_rotate_loop", rot_task)
 
-    # Bridge control topics from SQLite to the bus (durable -> live)
+    # Bridges: service-only ctrl + chat bridge
     ctrl_topics = ["log/resummarize", "system/health", "system/heartbeat"]
     ctrl_task = asyncio.create_task(bridge_topics_to_bus(bus, ctrl_topics, poll_sec=1.0), name="bridge_topics_to_bus")
     _watch_task("bridge_topics_to_bus", ctrl_task)
 
     chat_task = asyncio.create_task(bridge_chat_to_bus(bus, poll_sec=1.0), name="bridge_chat_to_bus")
     _watch_task("bridge_chat_to_bus", chat_task)
+    await bus.publish("ui/print", {"text": f"[Main] Bridges ready. CWD={os.getcwd()}"}, sender="Main")
 
+    # Emergency Notepad executor (deterministic plan/exec)
     async def _emergency_notepad_exec():
         async for env in bus.subscribe("task/new"):
             try:
@@ -288,9 +262,6 @@ async def main():
                 if "open notepad" in tl and "type exactly:" in tl:
                     idx = tl.find("type exactly:")
                     content = text[idx + len("type exactly:"):].strip().strip('"').strip("'")
-                    snippet = (content[:40] + "") if len(content) > 40 else content
-                    await bus.publish("ui/print", {"text": f"[Main] Emergency: detected Notepad paste task: '{snippet}'"}, sender="Main", job_id=env.job_id)
-
                     steps = [
                         {"type":"tool","tool":"sysctl.launch","args":{"cmd":"notepad"}},
                         {"type":"tool","tool":"win.activate_title_contains","args":{"substr":"Notepad"}},
@@ -303,20 +274,17 @@ async def main():
                         {"type":"tool","tool":"win.activate_title_contains","args":{"substr":"Notepad"}},
                         {"type":"tool","tool":"ui.hotkey","args":{"combo":"ctrl+v"}},
                         {"type":"tool","tool":"ui.hotkey","args":{"combo":"ctrl+a"}},
-                        {"type":"tool","tool":"ui.hotkey","args":{"combo":"ctrl+c"}}
+                        {"type":"tool","tool":"ui.hotkey","args":{"combo":"ctrl+c"}},
                     ]
                     plan = {"title":"Emergency Notepad Paste","steps":steps}
                     await bus.publish("task/plan", plan, sender="Main", job_id=env.job_id)
                     await bus.publish("task/exec", plan, sender="Main", job_id=env.job_id)
             except Exception:
                 pass
-
     emerg_task = asyncio.create_task(_emergency_notepad_exec(), name="emergency_notepad_exec")
     _watch_task("emergency_notepad_exec", emerg_task)
 
-await bus.publish("ui/print", {"text": f"[Main] Bridges ready. CWD={os.getcwd()}"}, sender="Main")
-
-# Periodic service loops: heartbeat, health check, resummarize
+    # Periodic loops
     async def _heartbeat_loop():
         try:
             period = float(os.environ.get("HEARTBEAT_SEC", "5"))
@@ -389,8 +357,6 @@ await bus.publish("ui/print", {"text": f"[Main] Bridges ready. CWD={os.getcwd()}
     _watch_task("health_loop", health_task)
     _watch_task("resummarize_loop", resum_task)
 
-
-
     # Start agents
     agents = [
         CommsAgent("AI-1:Comms", bus, llm, memory, tools),
@@ -425,17 +391,15 @@ await bus.publish("ui/print", {"text": f"[Main] Bridges ready. CWD={os.getcwd()}
         else:
             await input_loop(bus, llm, tools, memory)
     finally:
-        for t in agent_tasks + ui_tasks + [rec_task, rot_task]:
-            t.cancel()
-        await asyncio.gather(*agent_tasks, *ui_tasks, rec_task, rot_task, return_exceptions=True)
+        for t in agent_tasks + ui_tasks + [rec_task, rot_task, hb_task, health_task, resum_task, emerg_task, ctrl_task, chat_task]:
+            try:
+                t.cancel()
+            except Exception:
+                pass
+        await asyncio.gather(*agent_tasks, *ui_tasks, rec_task, rot_task, hb_task, health_task, resum_task, emerg_task, ctrl_task, chat_task, return_exceptions=True)
 
-
-if __name__ == "__main__":
+if name == "main":
     try:
         asyncio.run(main())
     except KeyboardInterrupt:
         pass
-
-
-
-
