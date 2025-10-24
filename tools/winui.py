@@ -48,7 +48,6 @@ def focus_window(pid: Optional[int] = None, title_substr: Optional[str] = None) 
     return {"ok": out.startswith("ok:"), "stdout": out, "stderr": err, "code": code}
 
 
-
 def activate_pid(pid: int) -> Dict[str, Any]:
     return focus_window(pid=pid)
 
@@ -72,30 +71,6 @@ def wait_title_contains(substr: str, timeout: int = 10) -> Dict[str, Any]:
     last["timeout"] = True
     return last
 
-
-
-def activate_pid(pid: int) -> Dict[str, Any]:
-    return focus_window(pid=pid)
-
-
-def activate_title_contains(substr: str) -> Dict[str, Any]:
-    return focus_window(title_substr=substr or "")
-
-
-def wait_title_contains(substr: str, timeout: int = 10) -> Dict[str, Any]:
-    try:
-        t_end = time.time() + max(1, int(timeout))
-    except Exception:
-        t_end = time.time() + 10
-    last: Dict[str, Any] = {"ok": False, "error": "not found"}
-    while time.time() < t_end:
-        r = focus_window(title_substr=substr or "")
-        last = r if isinstance(r, dict) else {"ok": False}
-        if last.get("ok"):
-            return {"ok": True, "found": True, "title": last.get("stdout", "")}
-        time.sleep(0.2)
-    last["timeout"] = True
-    return last
 
 def register(tools) -> None:
     tools.add("win.focus_window", focus_window, desc="Focus a window (by pid or title substring, or newest with a main window)")

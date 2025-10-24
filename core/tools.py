@@ -83,6 +83,7 @@ for _m in (
     "tools.memutil",
     "tools.powershell",
     "tools.python_exec",
+    "tools.archive",
 ):
     _safe_register(_m)
 
