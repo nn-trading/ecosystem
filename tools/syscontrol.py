@@ -170,6 +170,7 @@ def launch(exe: str, args: Optional[List[str]] = None) -> Dict[str, Any]:
     the results in the JSON (typed/copied fields).
     """
     args = args or []
+    exe = _sanitize_exe(exe)
     resolved = exe
     if not Path(resolved).exists():
         cand = shutil.which(resolved) or (shutil.which(resolved + ".exe") if not resolved.lower().endswith(".exe") else None)
@@ -203,3 +204,4 @@ def launch(exe: str, args: Optional[List[str]] = None) -> Dict[str, Any]:
 def register(tools) -> None:
     tools.add("sysctl.set_env", set_env, desc="Set an environment variable in the current process")
     tools.add("sysctl.launch",  launch,  desc="Launch a program; can also parse phrases like 'type 123 then copy' and execute them in the launched app")
+

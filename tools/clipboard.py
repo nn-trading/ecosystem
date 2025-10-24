@@ -47,3 +47,4 @@ def register(tools) -> None:
     tools.add("clipboard.get_text", get_text, desc="Get text from clipboard")
     tools.add("clipboard.set_text", set_text, desc="Set text to clipboard")
     tools.add("clipboard.clear",    clear,    desc="Clear clipboard (empty string)")
+
