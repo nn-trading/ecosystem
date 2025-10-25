@@ -71,6 +71,13 @@ def _parse_actions(text: str) -> List[Dict[str, Any]]:
             if val:
                 typed_texts.append(val)
 
+    if not typed_texts:
+        m2 = re.search(r"\btype\s+(.+?)(?:\s+(?:then|and)\b|$)", t, flags=re.IGNORECASE)
+        if m2:
+            val = (m2.group(1) or "").strip()
+            if val and not re.search(r"\bctrl\+[a-z]\b", val, flags=re.IGNORECASE):
+                typed_texts.append(val)
+
     # Paste the requested text to avoid lost characters
     for val in typed_texts:
         steps.append({"type": "tool", "tool": "clipboard.set_text", "args": {"text": val}})
@@ -157,6 +164,20 @@ class BrainAgent:
                     {"type": "tool", "tool": "fs.ls", "args": {"path": "C:/bots/ecosys"}},
                 ],
             }
+
+        # Weather queries
+        lw = text.lower()
+        if re.search(r"\b(weather|forecast|temperature)\b", lw):
+            steps = [
+                {"type": "tool", "tool": "weather.get", "args": {"text": text}},
+            ]
+            return {
+                "title": "Get weather",
+                "rationale": "Use HTTP-backed weather tool (wttr.in).",
+                "steps": steps,
+            }
+
+
         m = OPEN_RX.search(text)
         if m:
             exe  = m.group(1).strip().strip('"').strip("'")

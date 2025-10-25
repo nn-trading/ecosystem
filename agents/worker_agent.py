@@ -102,12 +102,49 @@ class WorkerAgent(BaseAgent):
 
             # Determine a human-readable note if none was set (using last_result)
             if human_note is None and last_result is not None:
-                if isinstance(last_result, dict) and last_result.get("ok"):
-                    human_note = _truncate(last_result, 260)
-                elif isinstance(last_result, dict) and last_result.get("error"):
-                    human_note = f"Error: {last_result.get('error')}"
-                else:
-                    human_note = "Completed."
+                # Special-case: weather summary
+                try:
+                    wentry = None
+                    for r in reversed(results):
+                        if isinstance(r, dict) and r.get("tool") == "weather.get" and r.get("ok"):
+                            wentry = r; break
+                    if wentry:
+                        city = (wentry.get("city") or "").strip()
+                        data = wentry.get("data")
+                        temp = None; desc = None
+                        if isinstance(data, dict):
+                            cc = None
+                            try:
+                                ccl = data.get("current_condition") or data.get("currentCondition")
+                                if isinstance(ccl, list) and ccl:
+                                    cc = ccl[0]
+                            except Exception:
+                                cc = None
+                            if isinstance(cc, dict):
+                                temp = cc.get("temp_C") or cc.get("FeelsLikeC") or cc.get("tempF") or cc.get("temp_F")
+                                dlist = cc.get("weatherDesc")
+                                if isinstance(dlist, list) and dlist:
+                                    dv = dlist[0].get("value") if isinstance(dlist[0], dict) else None
+                                    if isinstance(dv, str):
+                                        desc = dv
+                        parts = []
+                        if city:
+                            parts.append(city)
+                        if temp is not None:
+                            parts.append(f"{temp} C")
+                        if desc:
+                            parts.append(desc)
+                        if parts:
+                            human_note = " - ".join(parts)
+                except Exception:
+                    pass
+                if human_note is None:
+                    if isinstance(last_result, dict) and last_result.get("ok"):
+                        human_note = _truncate(last_result, 260)
+                    elif isinstance(last_result, dict) and last_result.get("error"):
+                        human_note = f"Error: {last_result.get('error')}"
+                    else:
+                        human_note = "Completed."
 
             # **Prepare payload with full results and plan**
             payload: Dict[str, Any] = {"ok": ok}
