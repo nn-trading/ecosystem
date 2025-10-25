@@ -15,3 +15,6 @@ unz/
 var/
 workspace.zip
 
+# Virtual environment (do not commit)
+.venv/
+logs/*.txt
