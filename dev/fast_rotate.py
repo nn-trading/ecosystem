@@ -1,5 +1,5 @@
 # dev/fast_rotate.py
-import os, sys, json, tempfile
+import os, sys, json, tempfile, time
 from typing import List
 
 # Ensure repo root on PYTHONPATH
@@ -55,7 +55,18 @@ def main():
     except Exception:
         pass
 
-    os.replace(events, backup)
+    # On Windows the events file can be open for appends; retry rename a few times
+    attempts = 0
+    while True:
+        try:
+            os.replace(events, backup)
+            break
+        except PermissionError:
+            attempts += 1
+            if attempts >= 8:
+                raise
+            time.sleep(0.25 * attempts)
+    # Now place the new file
     os.replace(tmp_path, events)
     try:
         os.remove(backup)
