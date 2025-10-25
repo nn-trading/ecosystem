@@ -84,6 +84,8 @@ for _m in (
     "tools.powershell",
     "tools.python_exec",
     "tools.archive",
+    "tools.http",
+    "tools.weather",
 ):
     _safe_register(_m)
 

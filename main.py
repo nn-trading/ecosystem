@@ -250,7 +250,23 @@ async def main():
     _watch_task("bridge_chat_to_bus", chat_task)
     await bus.publish("ui/print", {"text": f"[Main] Bridges ready. CWD={os.getcwd()}"}, sender="Main")
 
-    # Emergency Notepad executor (deterministic plan/exec)
+    # Emergency Notepad executor (deterministic plan/exec) with debounce
+    plan_seen = set()
+    _emerg_pending = {}
+    async def _plan_watcher():
+        async for penv in bus.subscribe("task/plan"):
+            try:
+                jid = getattr(penv, "job_id", None)
+                if jid:
+                    plan_seen.add(jid)
+                    t = _emerg_pending.pop(jid, None)
+                    if t:
+                        t.cancel()
+            except Exception:
+                pass
+    plan_task = asyncio.create_task(_plan_watcher(), name="plan_watcher")
+    _watch_task("plan_watcher", plan_task)
+
     async def _emergency_notepad_exec():
         async for env in bus.subscribe("task/new"):
             try:
@@ -262,23 +278,35 @@ async def main():
                 if "open notepad" in tl and "type exactly:" in tl:
                     idx = tl.find("type exactly:")
                     content = text[idx + len("type exactly:"):].strip().strip('"').strip("'")
-                    steps = [
-                        {"type":"tool","tool":"sysctl.launch","args":{"exe":"notepad","args":[]}},
-                        {"type":"tool","tool":"win.activate_title_contains","args":{"substr":"Notepad"}},
-                        {"type":"tool","tool":"win.activate_title_contains","args":{"substr":"Notepad"}},
-                        {"type":"tool","tool":"clipboard.set_text","args":{"text": content}},
-                        {"type":"tool","tool":"win.activate_title_contains","args":{"substr":"Notepad"}},
-                        {"type":"tool","tool":"ui.hotkey","args":{"combo":"ctrl+v"}},
-                        {"type":"tool","tool":"win.activate_title_contains","args":{"substr":"Notepad"}},
-                        {"type":"tool","tool":"ui.hotkey","args":{"combo":"ctrl+v"}},
-                        {"type":"tool","tool":"win.activate_title_contains","args":{"substr":"Notepad"}},
-                        {"type":"tool","tool":"ui.hotkey","args":{"combo":"ctrl+v"}},
-                        {"type":"tool","tool":"ui.hotkey","args":{"combo":"ctrl+a"}},
-                        {"type":"tool","tool":"ui.hotkey","args":{"combo":"ctrl+c"}},
-                    ]
-                    plan = {"title":"Emergency Notepad Paste","steps":steps}
-                    await bus.publish("task/plan", plan, sender="Main", job_id=env.job_id)
-                    await bus.publish("task/exec", plan, sender="Main", job_id=env.job_id)
+                    jid = getattr(env, "job_id", None)
+                    async def _delayed_emergency_run(job_id, content_text):
+                        try:
+                            delay = float(os.environ.get("EMERGENCY_DELAY_SEC", "1.5"))
+                        except Exception:
+                            delay = 1.5
+                        await asyncio.sleep(delay)
+                        if job_id and job_id in plan_seen:
+                            return
+                        steps = [
+                            {"type":"tool","tool":"sysctl.launch","args":{"exe":"notepad","args":[]}},
+                            {"type":"tool","tool":"win.activate_title_contains","args":{"substr":"Notepad"}},
+                            {"type":"tool","tool":"win.activate_title_contains","args":{"substr":"Notepad"}},
+                            {"type":"tool","tool":"clipboard.set_text","args":{"text": content_text}},
+                            {"type":"tool","tool":"win.activate_title_contains","args":{"substr":"Notepad"}},
+                            {"type":"tool","tool":"ui.hotkey","args":{"combo":"ctrl+v"}},
+                            {"type":"tool","tool":"win.activate_title_contains","args":{"substr":"Notepad"}},
+                            {"type":"tool","tool":"ui.hotkey","args":{"combo":"ctrl+v"}},
+                            {"type":"tool","tool":"win.activate_title_contains","args":{"substr":"Notepad"}},
+                            {"type":"tool","tool":"ui.hotkey","args":{"combo":"ctrl+v"}},
+                            {"type":"tool","tool":"ui.hotkey","args":{"combo":"ctrl+a"}},
+                            {"type":"tool","tool":"ui.hotkey","args":{"combo":"ctrl+c"}},
+                        ]
+                        plan = {"title":"Emergency Notepad Paste","steps":steps}
+                        await bus.publish("task/plan", plan, sender="Main", job_id=job_id)
+                        await bus.publish("task/exec", plan, sender="Main", job_id=job_id)
+                    t = asyncio.create_task(_delayed_emergency_run(jid, content), name=f"emergency_notepad_wait_{jid or 'na'}")
+                    if jid:
+                        _emerg_pending[jid] = t
             except Exception:
                 pass
     emerg_task = asyncio.create_task(_emergency_notepad_exec(), name="emergency_notepad_exec")

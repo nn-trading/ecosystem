@@ -1,6 +1,6 @@
 # C:\bots\ecosys\tools\winui.py
 from __future__ import annotations
-import subprocess, time
+import subprocess, time, tempfile, os
 from typing import Any, Dict, Optional
 
 _PS_FOCUS = r'''
@@ -36,12 +36,30 @@ if ($null -ne $target) {
 '''
 
 def focus_window(pid: Optional[int] = None, title_substr: Optional[str] = None) -> Dict[str, Any]:
-    # Call the PowerShell helper and retry briefly if needed
-    args = ["powershell","-NoProfile","-Sta","-Command", _PS_FOCUS, "-TargetPid", str(pid or 0), "-TitleSubstr", title_substr or ""]
+    # Run the PowerShell helper as a temporary script so named params bind correctly
     out = ""; err = ""; code = -1
+    def _run_once() -> Dict[str, Any]:
+        try:
+            with tempfile.NamedTemporaryFile("w", delete=False, suffix=".ps1", encoding="utf-8") as f:
+                f.write(_PS_FOCUS)
+                path = f.name
+            try:
+                args = [
+                    "powershell","-NoProfile","-Sta","-File", path,
+                    "-TargetPid", str(int(pid or 0)),
+                    "-TitleSubstr", title_substr or "",
+                ]
+                c = subprocess.run(args, capture_output=True, text=True, encoding="utf-8")
+            finally:
+                try: os.remove(path)
+                except Exception: pass
+            return {"stdout": (c.stdout or "").strip(), "stderr": c.stderr, "code": c.returncode}
+        except Exception as e:
+            return {"stdout": "", "stderr": str(e), "code": -1}
+    last: Dict[str, Any] = {}
     for _ in range(3):
-        c = subprocess.run(args, capture_output=True, text=True, encoding="utf-8")
-        out = (c.stdout or "").strip(); err = c.stderr; code = c.returncode
+        last = _run_once()
+        out = last.get("stdout", ""); err = last.get("stderr", ""); code = int(last.get("code", -1))
         if out.startswith("ok:"):
             break
         time.sleep(0.2)

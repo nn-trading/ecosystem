@@ -1,0 +1,26 @@
+AI: [Main] Bridges ready. CWD=C:\bots\ecosys
+AI: AI-1:Comms: Comms online.
+AI: AI-3:Worker: Worker online.
+AI: AI-5:Logger: Logger initialized. Building summary...
+AI: AI-5:Logger: Summary ready.
+AI: AI-6:Autofix: Autofix online.
+AI: [Main] Headless mode: running service loops only.
+AI: [Summary] ## Session Summary (rolling)
+
+- Lines summarized: 0
+- Kept recent: 35695 (max 500000)
+- Top (rolled) topics: -
+
+AI: AI-1:Comms: Plan ready: Launch notepad and actions: and type exactly: HELLO FROM RESUME FIXED then copy - 8 step(s).
+AI: AI-1:Comms: Plan ready: Get weather - 1 step(s).
+AI: [Worker] sysctl.launch {"exe": "notepad", "args": []} -> {"ok": true, "pid": 30940, "exe": "C:\\WINDOWS\\System32\\notepad.exe", "tool": "sysctl.launch"}
+AI: [Worker] win.wait_title_contains {"substr": "Notepad", "timeout": 6} -> {"ok": true, "found": true, "title": "ok:40904:Untitled - Notepad", "tool": "win.wait_title_contains"}
+AI: [Worker] clipboard.set_text {"text": "HELLO FROM RESUME FIXED"} -> {"ok": true, "tool": "clipboard.set_text"}
+AI: [Worker] ui.hotkey {"keys": ["ctrl", "v"]} -> {"ok": true, "sent": "^v", "tool": "ui.hotkey"}
+AI: [Worker] clipboard.clear {} -> {"ok": true, "warn": "Set-Clipboard : Value cannot be null.\nParameter name: text\nAt line:1 char:10\n+ $txt=''; Set-Clipboard -Value $txt\n+          ~~~~~~~~~~~~~~~~~~~~~~~~~\n    + CategoryInfo          : NotSpecified: (:) [Set-Clipboard], ArgumentNullExcep...
+AI: [Worker] ui.hotkey {"keys": ["ctrl", "a"]} -> {"ok": true, "sent": "^a", "tool": "ui.hotkey"}
+AI: [Worker] ui.hotkey {"keys": ["ctrl", "c"]} -> {"ok": true, "sent": "^c", "tool": "ui.hotkey"}
+AI: [Worker] clipboard.get_text {} -> {"ok": true, "text": "HELLO FROM RESUME FIXED", "tool": "clipboard.get_text"}
+AI: AI-1:Comms: [OK] Done: {"ok": true, "text": "HELLO FROM RESUME FIXED", "tool": "clipboard.get_text"}
+AI: [Worker] weather.get {"text": "current weather in Dublin"} -> {"ok": true, "city": "Dublin", "url": "https://wttr.in/Dublin?format=j1", "data": {"current_condition": [{"FeelsLikeC": "6", "FeelsLikeF": "43", "cloudcover": "75", "humidity": "76", "localObsDateTime": "2025-10-25 03:07 PM", "observation_time": "02:07 PM", "p...
+AI: AI-1:Comms: [OK] Done: Dublin - 9 C - Partly cloudy
