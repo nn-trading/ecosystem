@@ -145,7 +145,16 @@ class Memory:
             if os.path.exists(backup):
                 try: os.remove(backup)
                 except Exception: pass
-            os.replace(self.events_path, backup)
+            attempts = 0
+            while True:
+                try:
+                    os.replace(self.events_path, backup)
+                    break
+                except PermissionError:
+                    attempts += 1
+                    if attempts >= 8:
+                        raise
+                    time.sleep(0.25 * attempts)
             os.replace(tmp_path, self.events_path)
             # best-effort cleanup backup
             try: os.remove(backup)
