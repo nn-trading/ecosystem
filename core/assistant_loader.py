@@ -38,6 +38,14 @@ def _tail_lines(path: str, n: int = 200) -> List[str]:
         return []
 
 
+
+def _repo_root() -> str:
+    try:
+        return os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
+    except Exception:
+        return os.getcwd()
+
+
 class AssistantLoader:
     def __init__(self) -> None:
         self.cfg = _read_json(ASSISTANT_CONFIG_PATH)

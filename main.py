@@ -17,7 +17,7 @@ def _assistant_log_path(cfg):
         os.environ.get("ASSISTANT_LOG_DIR")
         or cfg.get("log_dir")
         or os.environ.get("ECOSYS_ASSISTANT_LOG_DIR")
-        or r"C:\bots\assistant\logs"
+        or os.path.join(_repo_root(), "logs")
     )
     try:
         os.makedirs(log_dir, exist_ok=True)
@@ -81,6 +81,123 @@ GPT-5 Desktop Ecosystem ready. Type your instruction. '/status' or '/tools' or '
 --------------------------------------------------------------------------------
 """.strip()
 
+
+# --- Helpers: ASCII sanitize and TASKS.md writer ---
+
+
+# --- Helpers: PID files and cleanup ---
+
+def _repo_root() -> str:
+    try:
+        return os.path.dirname(os.path.abspath(__file__))
+    except Exception:
+        return os.getcwd()
+
+
+def _ensure_dir(path: str) -> None:
+    try:
+        os.makedirs(path, exist_ok=True)
+    except Exception:
+        pass
+
+
+def _write_pid_files() -> None:
+    repo = _repo_root()
+    logs_dir = os.path.join(repo, "logs")
+    _ensure_dir(logs_dir)
+    pid = os.getpid()
+    try:
+        for name in ("ecosys_pid.txt", "headless_pid.txt"):
+            try:
+                with open(os.path.join(logs_dir, name), "w", encoding="ascii", errors="ignore") as f:
+                    f.write(str(pid))
+            except Exception:
+                pass
+    except Exception:
+        pass
+
+
+def _cleanup_orphan_backups() -> None:
+    try:
+        repo = _repo_root()
+        dirs = [os.path.join(repo, "logs"), os.path.join(repo, "workspace", "logs")]
+        for d in dirs:
+            try:
+                if not os.path.isdir(d):
+                    continue
+                for fn in os.listdir(d):
+                    if fn.startswith("events_backup_") and fn.endswith(".jsonl"):
+                        fp = os.path.join(d, fn)
+                        try:
+                            os.remove(fp)
+                        except Exception:
+                            pass
+            except Exception:
+                pass
+    except Exception:
+        pass
+
+
+def _sanitize_ascii(text: str) -> str:
+    try:
+        return text.encode("ascii", "ignore").decode("ascii", "ignore")
+    except Exception:
+        return "".join(ch for ch in str(text) if ord(ch) < 128)
+
+
+def _assistant_log_dir() -> str:
+    cfg = _load_assistant_config()
+    return (
+        os.environ.get("ASSISTANT_LOG_DIR")
+        or cfg.get("log_dir")
+        or os.environ.get("ECOSYS_ASSISTANT_LOG_DIR")
+        or os.path.join(_repo_root(), "logs")
+    )
+
+
+def _write_tasks_md() -> None:
+    try:
+        log_dir = _assistant_log_dir()
+        tasks_path = os.path.join(log_dir, "tasks.json")
+        repo = _repo_root()
+        out_md = os.path.join(repo, "TASKS.md")
+        tasks = []
+        if os.path.exists(tasks_path):
+            try:
+                with open(tasks_path, "r", encoding="utf-8", errors="ignore") as f:
+                    data = json.load(f)
+                if isinstance(data, dict) and isinstance(data.get("tasks"), list):
+                    tasks = data.get("tasks") or []
+                elif isinstance(data, list):
+                    tasks = data
+            except Exception:
+                tasks = []
+        lines = ["# Tasks", ""]
+        if not tasks:
+            lines.append("(no tasks found)")
+        else:
+            for t in tasks:
+                try:
+                    tid = str(t.get("id") or t.get("title") or "").strip()
+                    title = str(t.get("title") or tid)
+                    status = str(t.get("status") or "todo")
+                    note = str(t.get("notes") or "")
+                    line = f"* [{status}] {title}"
+                    if tid and tid != title:
+                        line += f" (id: {tid})"
+                    if note:
+                        line += f" - {note}"
+                    lines.append(_sanitize_ascii(line))
+                except Exception:
+                    pass
+        text = "\n".join(lines) + "\n"
+        with open(out_md, "w", encoding="ascii", errors="ignore") as f:
+            f.write(text)
+    except Exception:
+        pass
+
+
+
 async def ui_printer(bus: EventBus):
     async for env in bus.subscribe("ui/print"):
         payload = env.payload or {}
@@ -103,6 +220,11 @@ async def summary_printer(bus: EventBus):
                 safe = "".join(ch for ch in txt if ord(ch) < 128)
             if safe:
                 print(f"AI: [Summary] {safe}")
+            # Update ASCII-safe TASKS.md on each summary to keep snapshot fresh
+            try:
+                _write_tasks_md()
+            except Exception:
+                pass
 
 async def bus_recorder(bus: EventBus, memory: Memory):
     async for env in bus.subscribe_prefix(""):
@@ -189,6 +311,20 @@ async def main():
     # Force working directory to repo root so EventLog paths resolve correctly
     try:
         os.chdir(os.path.dirname(os.path.abspath(__file__)))
+    except Exception:
+        pass
+
+    # Early runtime bookkeeping: PID files, orphan log backups, ASCII-safe tasks snapshot
+    try:
+        _write_pid_files()
+    except Exception:
+        pass
+    try:
+        _cleanup_orphan_backups()
+    except Exception:
+        pass
+    try:
+        _write_tasks_md()
     except Exception:
         pass
 

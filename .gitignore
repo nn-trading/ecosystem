@@ -2,6 +2,8 @@
 workspace/logs/*.jsonl
 workspace/logs/*.jsonl.bak
 logs/*.log
+logs/*.txt
+logs/*.jsonl
 logs/headless_pid.txt
 logs/loop.log
 logs/transcripts/
@@ -17,4 +19,9 @@ workspace.zip
 
 # Virtual environment (do not commit)
 .venv/
-logs/*.txt
+
+# Runtime snapshots
+TASKS.md
+# Additional ignore patterns
+logs/*.out
+

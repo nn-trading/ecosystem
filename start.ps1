@@ -1,4 +1,4 @@
-param(
+﻿param(
   [switch]$Headless = $true,
   [int]$StopAfterSec = 0,
   [int]$HeartbeatSec = 5,
@@ -11,7 +11,7 @@ param(
   [string]$PythonExe = ""
 )
 $ErrorActionPreference = 'Stop'
-$repo = Split-Path -Parent $PSScriptRoot
+$repo = $PSScriptRoot
 Set-Location $repo
 
 # Logs
@@ -62,10 +62,16 @@ $envParts = @(
   'set HEARTBEAT_SEC=' + $HeartbeatSec,
   'set HEALTH_SEC=' + $HealthSec,
   'set RESUMMARIZE_SEC=' + $ResummarizeSec,
-  'set MEM_ROTATE_SEC=' + $MemRotateSec
+  'set MEM_ROTATE_SEC=' + $MemRotateSec,
+  'set ECOSYS_REPO_ROOT=' + $repo,
+  'set ASSISTANT_LOG_DIR=' + $logs,
+  'set ECOSYS_ASSISTANT_LOG_DIR=' + $logs
 )
 $joinedEnv = [string]::Join('&& ', $envParts)
-$cmdArgs = "/c $joinedEnv && \"$pyExe\" \"$repo\\main.py\" 1>> \"$stdout\" 2>> \"$stderr\""
+# Use cmd.exe redirection for both modes
+$cmdArgs = "/c $joinedEnv && `"$pyExe`" `"$repo\\main.py`" 1>> `"$stdout`" 2>> `"$stderr`""
+
+
 
 Write-Host "[start] Repo: $repo"
 Write-Host "[start] Python: $pyExe"
@@ -73,11 +79,14 @@ Write-Host "[start] Headless: $Headless StopAfterSec: $StopAfterSec"
 
 if ($Background) {
   $p = Start-Process -FilePath 'cmd.exe' -ArgumentList $cmdArgs -WorkingDirectory $repo -WindowStyle Hidden -PassThru
-  $pid = $p.Id
-  Set-Content -Path $pidFile -Value $pid
-  Write-Host "[start] Launched background process PID $pid"
+  $childPid = $p.Id
+  Set-Content -Path $pidFile -Value $childPid
+  Write-Host "[start] Launched background process PID $childPid"
   Write-Host "[start] Stdout: $stdout"
   Write-Host "[start] Stderr: $stderr"
 } else {
   & cmd.exe $cmdArgs
 }
+
+
+
