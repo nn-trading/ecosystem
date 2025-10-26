@@ -25,3 +25,7 @@ TASKS.md
 # Additional ignore patterns
 logs/*.out
 
+# Ignore JSON logs except backlog
+logs/*.json
+!logs/tasks.json
+

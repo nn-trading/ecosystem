@@ -1,5 +1,5 @@
 # C:\bots\ecosys\quick_probe.py
-import os, sys, json, glob, sqlite3
+import os, sys, json, glob, sqlite3, time, hashlib
 from pathlib import Path
 
 REPO = Path(__file__).resolve().parent
@@ -8,14 +8,26 @@ WS_LOGS = REPO / 'workspace' / 'logs'
 
 results = []
 
-# PID files
+# PID files + live verification
+try:
+    import psutil  # type: ignore
+except Exception:
+    psutil = None  # runtime optional
+
 for name in ('ecosys_pid.txt','headless_pid.txt'):
     p = LOGS / name
     results.append({'check':'pid_exists','name':name,'exists':p.exists()})
     if p.exists():
         try:
             txt = p.read_text(encoding='ascii', errors='ignore').strip()
-            results.append({'check':'pid_isdigit','name':name,'ok':txt.isdigit(),'value':txt})
+            isdig = txt.isdigit()
+            live = False
+            if isdig and psutil is not None:
+                try:
+                    live = psutil.pid_exists(int(txt))
+                except Exception:
+                    live = False
+            results.append({'check':'pid_info','name':name,'isdigit':isdig,'value':txt,'live':live})
         except Exception as e:
             results.append({'check':'pid_read_err','name':name,'err':str(e)})
 
@@ -57,4 +69,59 @@ try:
 except Exception as e:
     results.append({'check':'memory_db_err','err':str(e)})
 
-print(json.dumps(results, indent=2))
+# Repo inventory (ASCII-safe) and write logs/repo_state.json
+
+def _sha1_bytes(data: bytes) -> str:
+    try:
+        return hashlib.sha1(data).hexdigest()
+    except Exception:
+        return ''
+
+def _inventory_repo(root: Path) -> dict:
+    ex_dirs = {'.git', '.venv', 'workspace', 'logs', '__pycache__'}
+    by_ext: dict[str,int] = {}
+    files_list: list[dict] = []
+    total_bytes = 0
+    count = 0
+    for dirpath, dirnames, filenames in os.walk(root):
+        # prune excluded dirs
+        dirnames[:] = [d for d in dirnames if d not in ex_dirs]
+        for fn in filenames:
+            try:
+                rp = Path(dirpath) / fn
+                rel = str(rp.relative_to(root))
+                ext = (rp.suffix or '').lstrip('.').lower()
+                by_ext[ext] = by_ext.get(ext, 0) + 1
+                sz = rp.stat().st_size
+                total_bytes += sz
+                count += 1
+                entry = {'path': rel, 'size': sz}
+                # hash small files only (<=256KB)
+                if sz <= 262144:
+                    try:
+                        entry['sha1'] = _sha1_bytes(rp.read_bytes())
+                    except Exception:
+                        pass
+                files_list.append(entry)
+            except Exception:
+                pass
+    summary = {
+        'generated_ts': time.time(),
+        'root': str(root),
+        'files_total': count,
+        'bytes_total': total_bytes,
+        'by_ext': by_ext,
+    }
+    return {'summary': summary, 'files': files_list}
+
+try:
+    inv = _inventory_repo(REPO)
+    out_path = LOGS / 'repo_state.json'
+    out_path.parent.mkdir(parents=True, exist_ok=True)
+    with open(out_path, 'w', encoding='utf-8') as f:
+        json.dump({'root': str(REPO), **inv}, f, ensure_ascii=True)
+    results.append({'check':'repo_state_written','path':str(out_path),'files':inv['summary']['files_total']})
+except Exception as e:
+    results.append({'check':'repo_state_err','err':str(e)})
+
+print(json.dumps(results, ensure_ascii=True))

@@ -347,19 +347,35 @@ async def main():
     except Exception:
         pass
 
-    # Assistant resume
-    try:
-        loader = AssistantLoader()
-        await loader.publish_resume(bus)
-    except Exception:
-        pass
-
     ui_tasks: List[asyncio.Task] = []
     t1 = asyncio.create_task(ui_printer(bus), name="ui_printer")
     t2 = asyncio.create_task(summary_printer(bus), name="summary_printer")
     _watch_task("ui_printer", t1); _watch_task("summary_printer", t2)
     ui_tasks += [t1, t2]
     await asyncio.sleep(0)
+
+    # Re-emit resume after UI subscribers ready
+    try:
+        # Also print to stdout to ensure background redirection captures resume markers
+        try:
+            print("AI: [Main] About to publish resume")
+        except Exception:
+            pass
+        await bus.publish("ui/print", {"text": "[Main] About to publish resume..."}, sender="Main")
+        loader = AssistantLoader()
+        await loader.publish_resume(bus)
+        try:
+            print("AI: [Main] publish_resume completed")
+        except Exception:
+            pass
+        await bus.publish("ui/print", {"text": "[Main] publish_resume completed"}, sender="Main")
+    except Exception as e:
+        try:
+            msg = f"[Main] publish_resume exception: {e}"
+            print("AI: " + msg)
+            await bus.publish("ui/print", {"text": msg}, sender="Main")
+        except Exception:
+            pass
 
     # Recorder and rotation
     rec_task = asyncio.create_task(bus_recorder(bus, memory), name="bus_recorder")

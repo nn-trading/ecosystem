@@ -65,7 +65,9 @@ $envParts = @(
   'set MEM_ROTATE_SEC=' + $MemRotateSec,
   'set ECOSYS_REPO_ROOT=' + $repo,
   'set ASSISTANT_LOG_DIR=' + $logs,
-  'set ECOSYS_ASSISTANT_LOG_DIR=' + $logs
+  'set ECOSYS_ASSISTANT_LOG_DIR=' + $logs,
+  'set PYTHONUNBUFFERED=1',
+  'set PYTHONIOENCODING=utf-8'
 )
 $joinedEnv = [string]::Join('&& ', $envParts)
 # Use cmd.exe redirection for both modes

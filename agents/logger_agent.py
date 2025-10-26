@@ -12,7 +12,7 @@ def _int_env(name: str, default: int) -> int:
         return default
 
 LOGGER_MAX_KEEP = _int_env("LOGGER_MAX_KEEP", 500_000)
-LOGGER_RECENT_FOR_COMMS = _int_env("LOGGER_RECENT_FOR_COMMS", 200)
+LOGGER_RECENT_FOR_COMMS = _int_env("LOGGER_RECENT_FOR_COMMS", 50)
 
 class LoggerAgent(BaseAgent):
     def __init__(self, name: str, bus, llm=None, memory=None, tools=None, *args, **kwargs):
@@ -50,7 +50,8 @@ class LoggerAgent(BaseAgent):
         await self.bus.publish("memory/summary", {"text": summary_text}, sender=self.name)
 
         # Compact recent context for Comms/others (if they listen)
-        recent = self.log.recent(LOGGER_RECENT_FOR_COMMS)
+        recent_all = self.log.recent(LOGGER_RECENT_FOR_COMMS)
+        recent = [e for e in recent_all if (e.get("topic") not in ("memory/context",))]
         await self.bus.publish("memory/context", {
             "recent": recent,
             "count": len(recent),
@@ -79,7 +80,8 @@ class LoggerAgent(BaseAgent):
                     )
                     await self.bus.publish("memory/summary", {"text": summary_text}, sender=self.name)
                     # Also refresh compact recent context
-                    recent = self.log.recent(LOGGER_RECENT_FOR_COMMS)
+                    recent_all = self.log.recent(LOGGER_RECENT_FOR_COMMS)
+                    recent = [e for e in recent_all if (e.get("topic") not in ("memory/context",))]
                     await self.bus.publish("memory/context", {
                         "recent": recent,
                         "count": len(recent),

@@ -55,18 +55,13 @@ class TesterAgent:
                             await self.bus.publish("test/passed", {"text": txt, "length": len(txt)}, sender=self.name, job_id=job_id)
 
                 # subscribe
-                r1 = on("task/plan", _plan_handler)
-                r2 = on("task/result", _result_handler)
-                if inspect.isawaitable(r1): await r1
-                if inspect.isawaitable(r2): await r2
-                while True:
-                    await asyncio.sleep(3600)
+                on("task/plan", _plan_handler)
+                on("task/result", _result_handler)
 
-            # fallback idle
-            while True:
-                await asyncio.sleep(3600)
+            # idle until cancelled
+            await asyncio.Event().wait()
 
+        except asyncio.CancelledError:
+            return
         except Exception as e:
             print(f"{self.name}: run() warning: {e.__class__.__name__}: {e}")
-            while True:
-                await asyncio.sleep(3600)
