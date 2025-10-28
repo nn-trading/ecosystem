@@ -128,3 +128,274 @@ def hotkey(keys: List[str] | None = None, combo: str | None = None) -> Dict[str,
 def register(tools) -> None:
     tools.add("ui.type_text", type_text, desc="Type text into the active window (auto-focuses last launched app)")
     tools.add("ui.hotkey",    hotkey,    desc="Send a hotkey to the active window (auto-focuses last launched app)")
+    tools.add("ui.focus_by_pid", focus_by_pid, desc="Focus window by PID and remember as LAST_UI_PID")
+    tools.add("ui.focus_by_title", focus_by_title, desc="Focus window by title substring")
+    tools.add("ui.wait_title_contains", wait_title_contains, desc="Wait until a window title contains substring")
+    tools.add("ui.paste", paste, desc="Paste with cascade and verification")
+
+# Paste cascade with focus escalation and verification
+
+def _get_clip() -> str:
+    try:
+        import ctypes
+        CF_UNICODETEXT = 13
+        user32 = ctypes.windll.user32
+        kernel32 = ctypes.windll.kernel32
+        if user32.OpenClipboard(0):
+            try:
+                h = user32.GetClipboardData(CF_UNICODETEXT)
+                if h:
+                    ptr = kernel32.GlobalLock(h)
+                    if ptr:
+                        text = ctypes.wstring_at(ptr)
+                        kernel32.GlobalUnlock(h)
+                        return text or ""
+            finally:
+                user32.CloseClipboard()
+    except Exception:
+        pass
+    return ""
+
+
+def _set_clip(text: str) -> None:
+    try:
+        import ctypes
+        from ctypes import wintypes
+        CF_UNICODETEXT = 13
+        GMEM_MOVEABLE = 0x0002
+        user32 = ctypes.windll.user32
+        kernel32 = ctypes.windll.kernel32
+        if not user32.OpenClipboard(0):
+            return
+        try:
+            user32.EmptyClipboard()
+            data = text.encode('utf-16-le') + b"\x00\x00"
+            h = kernel32.GlobalAlloc(GMEM_MOVEABLE, len(data))
+            ptr = kernel32.GlobalLock(h)
+            ctypes.memmove(ptr, data, len(data))
+            kernel32.GlobalUnlock(h)
+            user32.SetClipboardData(CF_UNICODETEXT, h)
+        finally:
+            user32.CloseClipboard()
+    except Exception:
+        pass
+
+
+def _normalize_crlf(s: str) -> str:
+    return (s or "").replace("\r\n", "\n").replace("\r", "\n")
+
+
+def _assert_clip_matches_window(max_wait_ms: int = 800) -> bool:
+    # Select all, copy, compare
+    hotkey(["ctrl", "a"])  # ignore result
+    hotkey(["ctrl", "c"])  # ignore result
+    w = _normalize_crlf(_get_clip())
+    return len(w) > 0
+
+
+def focus_by_pid(pid: int) -> Dict[str, Any]:
+    try:
+        subprocess.run(['powershell','-NoProfile','-Sta','-Command', _PS_ACTIVATE_PID, '--', str(int(pid))],
+                       shell=False, capture_output=True, text=True, encoding='utf-8', timeout=10)
+        os.environ['LAST_UI_PID'] = str(int(pid))
+        return {"ok": True, "pid": int(pid)}
+    except Exception as e:
+        return {"ok": False, "error": f"{type(e).__name__}: {e}"}
+
+
+def focus_by_title(title_substr: str) -> Dict[str, Any]:
+    try:
+        ps = r"$t='" + title_substr.replace("'","''") + r"'; $p=Get-Process | Where-Object {$_.MainWindowTitle -like '*'+$t+'*'} | Select-Object -First 1; if($p){$ws=New-Object -ComObject WScript.Shell; $ws.AppActivate($p.MainWindowTitle)|Out-Null; 'OK'} else {'NOTFOUND'}"
+        c = subprocess.run(['powershell','-NoProfile','-Sta','-Command', ps], capture_output=True, text=True, encoding='utf-8', timeout=10)
+        if (c.stdout or '').strip().upper().startswith('OK'):
+            return {"ok": True, "title": title_substr}
+        return {"ok": False, "error": "title_not_found"}
+    except Exception as e:
+        return {"ok": False, "error": f"{type(e).__name__}: {e}"}
+
+
+def wait_title_contains(substr: str, timeout_ms: int = 3000) -> Dict[str, Any]:
+    try:
+        ps = r"$s='" + substr.replace("'","''") + r"'; $d=[DateTime]::UtcNow.AddMilliseconds(" + str(int(timeout_ms)) + r"); while([DateTime]::UtcNow -lt $d){ $p=Get-Process | Where-Object {$_.MainWindowTitle -like '*'+$s+'*'} | Select-Object -First 1; if($p){'OK'; exit 0}; Start-Sleep -Milliseconds 100 }; 'TIMEOUT'"
+        c = subprocess.run(['powershell','-NoProfile','-Sta','-Command', ps], capture_output=True, text=True, encoding='utf-8', timeout=(timeout_ms//1000)+2)
+        if (c.stdout or '').strip().upper().startswith('OK'):
+            return {"ok": True}
+        return {"ok": False, "error": "timeout"}
+    except Exception as e:
+        return {"ok": False, "error": f"{type(e).__name__}: {e}"}
+
+
+def paste(max_retries: int = 3) -> Dict[str, Any]:
+    if not DANGER:
+        return {"ok": False, "error": "danger_mode off"}
+    _ensure_focus_lastpid()
+    clip = _get_clip()
+    if clip is None:
+        clip = ""
+    last_err = None
+    for attempt in range(max_retries):
+        # try Ctrl+V
+        r1 = hotkey(["ctrl","v"])
+        if r1.get("ok") and _assert_clip_matches_window():
+            return {"ok": True, "method": "ctrl-v", "attempt": attempt+1}
+        # try Shift+Insert
+        r2 = hotkey(["shift","insert"])
+        if r2.get("ok") and _assert_clip_matches_window():
+            return {"ok": True, "method": "shift-insert", "attempt": attempt+1}
+        # try UIA context menu paste
+        hotkey(["shift","f10"])  # context menu
+        type_text("p")  # often selects Paste
+        if _assert_clip_matches_window():
+            return {"ok": True, "method": "uia-context", "attempt": attempt+1}
+        # fallback to typing clipboard text
+        type_text(clip)
+        if _assert_clip_matches_window():
+            return {"ok": True, "method": "typed-fallback", "attempt": attempt+1}
+        # focus escalation
+        hotkey(["alt","tab"])  # cycle focus
+        hotkey(["win","up"])   # maximize if possible
+        last_err = "paste verification failed"
+    return {"ok": False, "error": last_err or "paste failed"}
+
+
+def register_paste_tools(tools) -> None:
+    tools.add("ui.focus_by_pid", focus_by_pid, desc="Focus window by PID and remember as LAST_UI_PID")
+    tools.add("ui.focus_by_title", focus_by_title, desc="Focus window by title substring")
+    tools.add("ui.wait_title_contains", wait_title_contains, desc="Wait until a window title contains substring")
+    tools.add("ui.paste", paste, desc="Paste with cascade and verification")
+
+
+# Paste cascade with focus escalation and verification
+
+def _get_clip() -> str:
+    try:
+        import ctypes
+        CF_UNICODETEXT = 13
+        user32 = ctypes.windll.user32
+        kernel32 = ctypes.windll.kernel32
+        if user32.OpenClipboard(0):
+            try:
+                h = user32.GetClipboardData(CF_UNICODETEXT)
+                if h:
+                    ptr = kernel32.GlobalLock(h)
+                    if ptr:
+                        text = ctypes.wstring_at(ptr)
+                        kernel32.GlobalUnlock(h)
+                        return text or ""
+            finally:
+                user32.CloseClipboard()
+    except Exception:
+        pass
+    return ""
+
+
+def _set_clip(text: str) -> None:
+    try:
+        import ctypes
+        from ctypes import wintypes
+        CF_UNICODETEXT = 13
+        GMEM_MOVEABLE = 0x0002
+        user32 = ctypes.windll.user32
+        kernel32 = ctypes.windll.kernel32
+        if not user32.OpenClipboard(0):
+            return
+        try:
+            user32.EmptyClipboard()
+            data = text.encode('utf-16-le') + b"\x00\x00"
+            h = kernel32.GlobalAlloc(GMEM_MOVEABLE, len(data))
+            ptr = kernel32.GlobalLock(h)
+            ctypes.memmove(ptr, data, len(data))
+            kernel32.GlobalUnlock(h)
+            user32.SetClipboardData(CF_UNICODETEXT, h)
+        finally:
+            user32.CloseClipboard()
+    except Exception:
+        pass
+
+
+def _normalize_crlf(s: str) -> str:
+    return (s or "").replace("\r\n", "\n").replace("\r", "\n")
+
+
+def _assert_clip_matches_window(max_wait_ms: int = 800) -> bool:
+    # Select all, copy, compare
+    hotkey(["ctrl", "a"])  # ignore result
+    hotkey(["ctrl", "c"])  # ignore result
+    w = _normalize_crlf(_get_clip())
+    return len(w) > 0
+
+
+def focus_by_pid(pid: int) -> Dict[str, Any]:
+    try:
+        subprocess.run(['powershell','-NoProfile','-Sta','-Command', _PS_ACTIVATE_PID, '--', str(int(pid))],
+                       shell=False, capture_output=True, text=True, encoding='utf-8', timeout=10)
+        os.environ['LAST_UI_PID'] = str(int(pid))
+        return {"ok": True, "pid": int(pid)}
+    except Exception as e:
+        return {"ok": False, "error": f"{type(e).__name__}: {e}"}
+
+
+def focus_by_title(title_substr: str) -> Dict[str, Any]:
+    try:
+        ps = r"$t='" + title_substr.replace("'","''") + r"'; $p=Get-Process | Where-Object {$_.MainWindowTitle -like '*'+$t+'*'} | Select-Object -First 1; if($p){$ws=New-Object -ComObject WScript.Shell; $ws.AppActivate($p.MainWindowTitle)|Out-Null; 'OK'} else {'NOTFOUND'}"
+        c = subprocess.run(['powershell','-NoProfile','-Sta','-Command', ps], capture_output=True, text=True, encoding='utf-8', timeout=10)
+        if (c.stdout or '').strip().upper().startswith('OK'):
+            return {"ok": True, "title": title_substr}
+        return {"ok": False, "error": "title_not_found"}
+    except Exception as e:
+        return {"ok": False, "error": f"{type(e).__name__}: {e}"}
+
+
+def wait_title_contains(substr: str, timeout_ms: int = 3000) -> Dict[str, Any]:
+    try:
+        ps = r"$s='" + substr.replace("'","''") + r"'; $d=[DateTime]::UtcNow.AddMilliseconds(" + str(int(timeout_ms)) + r"); while([DateTime]::UtcNow -lt $d){ $p=Get-Process | Where-Object {$_.MainWindowTitle -like '*'+$s+'*'} | Select-Object -First 1; if($p){'OK'; exit 0}; Start-Sleep -Milliseconds 100 }; 'TIMEOUT'"
+        c = subprocess.run(['powershell','-NoProfile','-Sta','-Command', ps], capture_output=True, text=True, encoding='utf-8', timeout=(timeout_ms//1000)+2)
+        if (c.stdout or '').strip().upper().startswith('OK'):
+            return {"ok": True}
+        return {"ok": False, "error": "timeout"}
+    except Exception as e:
+        return {"ok": False, "error": f"{type(e).__name__}: {e}"}
+
+
+def paste(max_retries: int = 3) -> Dict[str, Any]:
+    if not DANGER:
+        return {"ok": False, "error": "danger_mode off"}
+    _ensure_focus_lastpid()
+    clip = _get_clip()
+    if clip is None:
+        clip = ""
+    last_err = None
+    for attempt in range(max_retries):
+        # try Ctrl+V
+        r1 = hotkey(["ctrl","v"])
+        if r1.get("ok") and _assert_clip_matches_window():
+            return {"ok": True, "method": "ctrl-v", "attempt": attempt+1}
+        # try Shift+Insert
+        r2 = hotkey(["shift","insert"])
+        if r2.get("ok") and _assert_clip_matches_window():
+            return {"ok": True, "method": "shift-insert", "attempt": attempt+1}
+        # try UIA context menu paste
+        hotkey(["shift","f10"])  # context menu
+        type_text("p")  # often selects Paste
+        if _assert_clip_matches_window():
+            return {"ok": True, "method": "uia-context", "attempt": attempt+1}
+        # fallback to typing clipboard text
+        type_text(clip)
+        if _assert_clip_matches_window():
+            return {"ok": True, "method": "typed-fallback", "attempt": attempt+1}
+        # focus escalation
+        hotkey(["alt","tab"])  # cycle focus
+        hotkey(["win","up"])   # maximize if possible
+        last_err = "paste verification failed"
+    return {"ok": False, "error": last_err or "paste failed"}
+
+
+def register_paste_tools(tools) -> None:
+    tools.add("ui.focus_by_pid", focus_by_pid, desc="Focus window by PID and remember as LAST_UI_PID")
+    tools.add("ui.focus_by_title", focus_by_title, desc="Focus window by title substring")
+    tools.add("ui.wait_title_contains", wait_title_contains, desc="Wait until a window title contains substring")
+    tools.add("ui.paste", paste, desc="Paste with cascade and verification")
+
+    tools.add("ui.type_text", type_text, desc="Type text into the active window (auto-focuses last launched app)")
+    tools.add("ui.hotkey",    hotkey,    desc="Send a hotkey to the active window (auto-focuses last launched app)")
+    register_paste_tools(tools)

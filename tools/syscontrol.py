@@ -49,5 +49,14 @@ def launch(exe: str, args: Optional[List[str]] = None, cwd: Optional[str] = None
         return {"ok": False, "error": f"{e.__class__.__name__}: {e}"}
 
 
+def set_env(name: str, value: str) -> Dict[str, Any]:
+    try:
+        os.environ[str(name)] = str(value)
+        return {"ok": True, "name": str(name), "value": str(value)}
+    except Exception as e:
+        return {"ok": False, "error": f"{e.__class__.__name__}: {e}"}
+
+
 def register(tools) -> None:
     tools.add("sysctl.launch", launch, desc="Launch a Windows executable with optional args")
+    tools.add("sysctl.set_env", set_env, desc="Set an environment variable for this process")

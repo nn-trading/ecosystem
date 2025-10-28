@@ -4,16 +4,17 @@ from typing import Any, Dict
 import os
 
 DANGER = os.environ.get("AGENT_DANGER_MODE", "1") == "1"
-tools = None  # filled in register()
+_tools = None  # filled in register()
 
 def _call(name: str, **kwargs) -> Dict[str, Any]:
-    fn = tools.get(name)
-    if not fn:
-        return {"ok": False, "error": f"tool not found: {name}"}
+    global _tools
+    if _tools is None:
+        return {"ok": False, "error": "registry not ready"}
     try:
-        return fn(**kwargs) if kwargs else fn()
-    except TypeError:
-        return fn(kwargs)
+        return _tools.call(name, **kwargs)
+    except Exception as e:
+        return {"ok": False, "error": f"{type(e).__name__}: {e}"}
+
 
 def notepad_type_copy(text: str = "123") -> Dict[str, Any]:
     if not DANGER:
@@ -31,6 +32,7 @@ def notepad_type_copy(text: str = "123") -> Dict[str, Any]:
     g = _call("win.get_text_pid", pid=pid)
     return {"ok": True, "pid": pid, "text": g.get("text", "")}
 
+
 def paste_to_new_notepad() -> Dict[str, Any]:
     if not DANGER:
         return {"ok": False, "error": "danger_mode off"}
@@ -43,8 +45,15 @@ def paste_to_new_notepad() -> Dict[str, Any]:
         return p2
     return {"ok": True, "pid": pid2, "text": p2.get("text", "")}
 
-def register(_tools) -> None:
-    global tools
-    tools = _tools
-    tools.add("macro.notepad_type_copy",     notepad_type_copy,   desc="Open Notepad, set text, copy to clipboard, verify via control text")
-    tools.add("macro.paste_to_new_notepad",  paste_to_new_notepad,desc="Open a new Notepad and paste from clipboard via WM_PASTE, return resulting text")
+
+def register(reg) -> None:
+    global _tools
+    _tools = reg
+    # expose local callable via closure
+    globals()["_tools"] = reg
+    # Keep legacy names
+    reg.add("macro.notepad_type_copy",     notepad_type_copy,   desc="Open Notepad, set text, copy to clipboard, verify via control text")
+    reg.add("macro.paste_to_new_notepad",  paste_to_new_notepad,desc="Open a new Notepad and paste from clipboard via WM_PASTE, return resulting text")
+    # Provide required aliases
+    reg.add("uimacros.notepad_type_and_copy", notepad_type_copy,   desc="Alias: Notepad type and copy")
+    reg.add("uimacros.notepad_paste",         paste_to_new_notepad,desc="Alias: Notepad paste from clipboard")

@@ -91,6 +91,10 @@ for _m in (
     "tools.currency",
     "tools.calc",
     "tools.paths",
+    "tools.uia",
+    "tools.uimacros",
+    "tools.schedule",
+    "tools.browser",
 ):
     _safe_register(_m)
 

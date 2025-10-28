@@ -21,4 +21,5 @@ def sleep(seconds: float) -> Dict[str, Any]:
 
 def register(tools) -> None:
     tools.add("shell.run", run, desc="Run a shell command and capture output")
+    tools.add("shell.exec", run, desc="Run a shell command and capture output (alias)")
     tools.add("shell.sleep", sleep, desc="Sleep for a number of seconds")

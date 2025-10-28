@@ -152,3 +152,14 @@ def snap(url: str, wait: str = "load", headless: bool = True, full_page: bool = 
         return {"ok": True, "url": url, "path": tmp, "full_page": full_page}
     except Exception as e:
         return {"ok": False, "error": f"browser.snap failed: {e}"}
+
+
+def register(reg) -> None:
+    reg.add("browser.launch", launch, desc="Launch Chromium via Playwright (idempotent per thread)")
+    reg.add("browser.goto", goto, desc="Navigate to a URL using Playwright")
+    reg.add("browser.click", click, desc="Click a selector")
+    reg.add("browser.fill", fill, desc="Fill or type into a selector")
+    reg.add("browser.text", text, desc="Get inner text of selector")
+    reg.add("browser.screenshot", screenshot, desc="Take a screenshot of the current page")
+    reg.add("browser.close", close, desc="Close Playwright browser and cleanup")
+    reg.add("browser.snap", snap, desc="One-shot: open url, screenshot, close")
