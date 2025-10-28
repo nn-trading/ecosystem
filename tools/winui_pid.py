@@ -11,7 +11,13 @@ HWND   = wintypes.HWND
 DWORD  = wintypes.DWORD
 LPARAM = wintypes.LPARAM
 WPARAM = wintypes.WPARAM
-LRESULT= wintypes.LRESULT
+try:
+    LRESULT = wintypes.LRESULT
+except AttributeError:
+    try:
+        LRESULT = wintypes.LPARAM
+    except Exception:
+        LRESULT = ctypes.c_size_t
 BOOL   = wintypes.BOOL
 UINT   = wintypes.UINT
 LPWSTR = wintypes.LPWSTR
@@ -211,9 +217,31 @@ def paste_pid(pid: int) -> Dict[str, Any]:
     txt = _get_edit_text(edit)
     return {"ok": True, "pid": int(pid), "hwnd": hwnd, "text": txt}
 
+def list_windows(visible_only: bool = True, titled_only: bool = True) -> Dict[str, Any]:
+    items: List[Dict[str, Any]] = []
+    for h in _enum_windows():
+        pid = _get_pid(h)
+        title = _get_title(h)
+        vis = _is_visible(h)
+        if visible_only and not vis:
+            continue
+        if titled_only and not title:
+            continue
+        items.append({"hwnd": int(h), "pid": int(pid), "title": title, "visible": bool(vis)})
+    return {"ok": True, "count": len(items), "windows": items}
+
+
+def count_windows(visible_only: bool = True, titled_only: bool = True) -> Dict[str, Any]:
+    res = list_windows(visible_only=visible_only, titled_only=titled_only)
+    if not isinstance(res, dict) or not res.get("ok"):
+        return {"ok": False, "error": "failed to list windows"}
+    return {"ok": True, "count": int(res.get("count", 0))}
+
 def register(tools) -> None:
     tools.add("win.focus_pid",    focus_pid,    desc="Focus a window by process id and its edit control (if any)")
     tools.add("win.get_text_pid", get_text_pid, desc="Get text from a window's edit control by process id")
     tools.add("win.set_text_pid", set_text_pid, desc="Set/replace text in a window's edit control by process id")
     tools.add("win.copy_pid",     copy_pid,     desc="Copy (WM_COPY) in a window's edit control by process id")
     tools.add("win.paste_pid",    paste_pid,    desc="Paste (WM_PASTE) in a window's edit control by process id")
+    tools.add("win.list_windows", list_windows, desc="List top-level windows with pid/title visibility filters")
+    tools.add("win.count_windows", count_windows, desc="Count top-level windows (visible/titled filters)")

@@ -177,6 +177,58 @@ class BrainAgent:
                 "steps": steps,
             }
 
+        # Currency conversion intent
+        try:
+            m = re.search(r"\b(?:convert|exchange|xchg)\s+(?:(\d+(?:\.\d+)?)\s*)?([a-z]{3})\s+(?:to|in)\s+([a-z]{3})\b", text, flags=re.IGNORECASE)
+        except Exception:
+            m = None
+        if not m:
+            try:
+                m = re.search(r"\b(\d+(?:\.\d+)?)\s*([a-z]{3})\s+(?:to|in)\s*([a-z]{3})\b", text, flags=re.IGNORECASE)
+            except Exception:
+                m = None
+        if m:
+            try:
+                amt = float(m.group(1) or 1.0) if m.group(1) else 1.0
+            except Exception:
+                amt = 1.0
+            frm = (m.group(2) or "").upper()
+            to = (m.group(3) or "").upper()
+            steps = [
+                {"type": "tool", "tool": "currency.convert", "args": {"amount": amt, "from_currency": frm, "to_currency": to}}
+            ]
+            return {
+                "title": "Currency conversion",
+                "rationale": "Map intent to currency.convert tool.",
+                "steps": steps,
+            }
+
+
+
+        # Window counting and listing intents
+        try:
+            lw = text.lower()
+        except Exception:
+            lw = text
+        if re.search(r"\b(count|how many)\b.*\bwindows?\b", lw) or re.search(r"\bwindows?\b.*\b(count|how many)\b", lw):
+            steps = [
+                {"type": "tool", "tool": "win.count_windows", "args": {"visible_only": True, "titled_only": True}},
+            ]
+            return {
+                "title": "Count open windows",
+                "rationale": "Use Windows UI enumeration to count visible, titled top-level windows.",
+                "steps": steps,
+            }
+        if re.search(r"\b(list|show)\b.*\bwindows?\b", lw):
+            steps = [
+                {"type": "tool", "tool": "win.list_windows", "args": {"visible_only": True, "titled_only": True}},
+            ]
+            return {
+                "title": "List open windows",
+                "rationale": "List visible, titled top-level windows.",
+                "steps": steps,
+            }
+
 
         m = OPEN_RX.search(text)
         if m:

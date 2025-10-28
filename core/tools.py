@@ -79,6 +79,7 @@ for _m in (
     "tools.ui",
     "tools.syscontrol",
     "tools.winui",
+    "tools.winui_pid",
     "tools.fs",
     "tools.memutil",
     "tools.powershell",

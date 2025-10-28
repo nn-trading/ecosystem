@@ -29,12 +29,21 @@ def _detect_city_from_text(text: str) -> Optional[str]:
     if not text:
         return None
     t = text.strip()
-    # Prefer pattern: 'in <city>' near the end
-    m = re.search(r"\bin\s+([A-Za-z][A-Za-z .\-']+)$", t, flags=re.IGNORECASE)
+    # Trim trailing filler like 'right now' / 'now' / 'today' / 'currently'
+    t = re.sub(r"\b(right\s+now|now|currently|today)\b[?.!]*$", "", t, flags=re.IGNORECASE).strip()
+    # Prefer pattern: 'in <city>' but stop before filler/punctuation/end; use non-greedy capture
+    m = re.search(r"\bin\s+([A-Za-z][A-Za-z .\-']+?)(?=\s*(?:right\s+now|now|currently|today)\b|[?.!]|$)", t, flags=re.IGNORECASE)
     if m:
         return _clean_city(m.group(1))
-    # Fallback: last token/phrase with letters
+    # Fallback: 'in <city>' to end
+    m2 = re.search(r"\bin\s+([A-Za-z][A-Za-z .\-']+)$", t, flags=re.IGNORECASE)
+    if m2:
+        return _clean_city(m2.group(1))
+    # Fallback: last token/phrase with letters (ignore filler like 'now')
     parts = [p.strip(_PUNCT + " ") for p in t.split() if any(c.isalpha() for c in p)]
+    stop = {"now","today","currently","right","rightnow"}
+    while parts and parts[-1].lower() in stop:
+        parts.pop()
     if parts:
         return _clean_city(parts[-1])
     return None
