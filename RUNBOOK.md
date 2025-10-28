@@ -5,33 +5,39 @@ This file tracks session status and resume checkpoints. ASCII-only/UTF-8.
 ## Current status
 - Repo: C:\bots\ecosys
 - Branch: eval-battery-and-maintenance-fixes
-- Headless: running; health OK; auto-resume shown in logs
-- Tools: winui_pid LRESULT fallback in place; import OK (Python 3.12)
-- Tests: pytest 17 passed, 2 warnings
-- Untracked: none (tmp files removed)
+- Commit: 93b111a
+- Tools: winui_pid LRESULT fallback in place; import OK (Python 3.12). SendMessageW.restype=c_longlong.
+- Tests: pytest 17 passed, 1 skipped (UI macro; gated by AGENT_DANGER_MODE), 2 warnings
+- Pip: restored via ensurepip; requirements installed
+- Working tree: clean
 
 ## Latest checks (2025-10-28)
-- Headless: running (PID 21216); auto-resume messages present; ToolsRegistry lists win.* tools
-- winui_pid: Python 3.12.10 import OK; SendMessageW.restype is ctypes.c_longlong; no new import errors seen; historical single occurrence remains in logs/start_stdout.log
+- ToolsRegistry: lists win.* and ui.* tools; registry OK
+- winui_pid: Python 3.12.10 import OK; SendMessageW.restype is ctypes.c_longlong; no import errors
 - Runtime tasks: logs/tasks.json shows T1..T8 all done
-- Git: working tree clean; branch eval-battery-and-maintenance-fixes
 - Encoding: continue ASCII-only in tracked files
 
+## Task tracking snapshot
+- RST-08: in_progress (Recovery/Status: summarize and hand off)
+- CHK-01: done (Git clean; latest commit 7c7bfef -> superseded by 93b111a)
+- CHK-02: done (Runtime registry check; winui_pid LRESULT verified)
+- UI-01: done (paste equality verification + recursion bug removed)
+- UI-02: todo (Notepad macro equality test added; skipped by default unless danger mode)
+- NET-01: todo (weather.get fallback and normalized output)
+- NET-02: todo (fx.convert fallback and normalized output)
+- NET-03: done (http.fetch retries/backoff exists)
+- CORE-01: todo (Brain intent detection + fuzzy replanning)
+- CORE-02: todo (Tester assertions + loop fix)
+- CORE-03: todo (Logger/Memory SQLite + runs/<ts>/ artifacts + summarizer)
+- ASCII-01: todo (ASCII-safe writer + sanitize writes)
+- ASAT-01: todo (Run mini acceptance suite and collect artifacts)
+- TEST-01: done (Pytest installed; 17 passed)
+- REP-01: todo (Produce ASAT final audit and output path + commit hash)
 
-## Project tasks update
-- T-ASST-MEM-AUTORESUME: done. Criteria: headless prints 'About to publish resume' and 'publish_resume completed', and AssistantLoader reports 'Resuming last session ... tasks=5'. Verified in headless_stdout.log tail and during status check. ToolsRegistry includes win.* tools indicating successful registration.
-
-
-## Session plan
-- T01: Discover saved logs/notes/checkpoints - done
-- T02: Execute maintenance pipeline - done
-- T03: Verify environment status and auto-resume - done
-- T04: Report consolidated status and next steps - done
-- T05: Fix tools.winui_pid import error if present - done
-- T06: VACUUM events.db safely - done
-- T07: Version control hygiene - done
-- T08: Persist consolidated status to RUNBOOK - done
-- T09: Re-verify headless logs for winui_pid import errors - done
+## Next steps
+- Implement NET-01/NET-02 provider fallbacks and normalized schemas
+- Implement CORE-01/02/03, ASCII-01, ASAT-01, REP-01
+- Keep artifacts ASCII-safe; continue to gate UI tests by AGENT_DANGER_MODE
 
 ## Notes
 - TASKS.md is ignored by .gitignore; this runbook is tracked for status persistence.
