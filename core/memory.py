@@ -1,6 +1,7 @@
 # C:\bots\ecosys\core\memory.py
 from __future__ import annotations
 import os, io, json, time, asyncio, tempfile, shutil, unicodedata
+from core.ascii_writer import write_jsonl_ascii
 from dataclasses import dataclass, asdict
 from typing import Any, Dict, Optional, Iterable, List, Tuple
 
@@ -80,10 +81,8 @@ class Memory:
         await self._write_jsonl(self.summaries_path, asdict(rec))
 
     async def _write_jsonl(self, path: str, obj: Dict[str, Any]) -> None:
-        line = json.dumps(obj, ensure_ascii=False) + "\n"
         async with self._lock:
-            with open(path, "a", encoding="utf-8") as f:
-                f.write(line)
+            write_jsonl_ascii(path, obj)
 
     # ---------------- read ----------------
 
