@@ -18,12 +18,8 @@ This file tracks session status and resume checkpoints. ASCII-only/UTF-8.
 - Encoding: continue ASCII-only in tracked files
 
 
-## Latest checks (2025-10-28)
-- Headless: running (PID 21216); auto-resume messages present; ToolsRegistry lists win.* tools
-- winui_pid: Python 3.12.10 import OK; SendMessageW.restype is ctypes.c_longlong; no new import errors seen; historical single occurrence remains in logs/start_stdout.log
-- Runtime tasks: logs/tasks.json shows T1..T8 all done
-- Git: working tree clean; branch eval-battery-and-maintenance-fixes
-- Encoding: continue ASCII-only in tracked files
+## Project tasks update
+- T-ASST-MEM-AUTORESUME: done. Criteria: headless prints 'About to publish resume' and 'publish_resume completed', and AssistantLoader reports 'Resuming last session ... tasks=5'. Verified in headless_stdout.log tail and during status check. ToolsRegistry includes win.* tools indicating successful registration.
 
 
 ## Session plan
