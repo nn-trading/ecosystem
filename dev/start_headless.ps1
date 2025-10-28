@@ -20,6 +20,7 @@ if ($existing -and (Get-Process -Id $existing -ErrorAction SilentlyContinue)) {
 }
 
 [System.Environment]::SetEnvironmentVariable("ECOSYS_HEADLESS","1","Process")
+[System.Environment]::SetEnvironmentVariable("ENABLE_JSONL_RECORDER","1","Process")
 [System.Environment]::SetEnvironmentVariable("STOP_AFTER_SEC",$STOP_AFTER_SEC.ToString(),"Process")
 [System.Environment]::SetEnvironmentVariable("HEARTBEAT_SEC",$HEARTBEAT_SEC.ToString(),"Process")
 [System.Environment]::SetEnvironmentVariable("HEALTH_SEC",$HEALTH_SEC.ToString(),"Process")
@@ -38,4 +39,18 @@ if (Get-Process -Id $pid -ErrorAction SilentlyContinue) {
 } else {
   $stopped = $false
 }
+
+# Write a health snapshot to logs/headless_health.json (ASCII-safe)
+$healthOut = Join-Path $logs "headless_health.json"
+try {
+  Push-Location $repo
+  & python "dev/health_check.py" | Out-File -FilePath $healthOut -Encoding ascii -Append
+  Pop-Location
+} catch {}
+
+# Clean up stale pid file if stopped
+if ($stopped -or -not (Get-Process -Id $pid -ErrorAction SilentlyContinue)) {
+  Remove-Item -LiteralPath $pidFile -ErrorAction SilentlyContinue
+}
+
 Write-Host ("Started PID {0} for {1}s. Stopped:{2}" -f $pid, $STOP_AFTER_SEC, $stopped)
