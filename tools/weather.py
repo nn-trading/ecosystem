@@ -41,7 +41,7 @@ def _detect_city_from_text(text: str) -> Optional[str]:
         return _clean_city(m2.group(1))
     # Fallback: last token/phrase with letters (ignore filler like 'now')
     parts = [p.strip(_PUNCT + " ") for p in t.split() if any(c.isalpha() for c in p)]
-    stop = {"now","today","currently","right","rightnow"}
+    stop = {"now","today","currently","right","rightnow","weather"}
     while parts and parts[-1].lower() in stop:
         parts.pop()
     if parts:

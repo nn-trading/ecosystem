@@ -21,8 +21,14 @@ def convert(amount: float, from_currency: str, to_currency: str) -> Dict[str, An
         url = API + "?" + urllib.parse.urlencode(params)
         req = urllib.request.Request(url=url, method="GET")
         ctx = ssl.create_default_context()
-        with urllib.request.urlopen(req, timeout=TIMEOUT, context=ctx) as resp:
+        resp = urllib.request.urlopen(req, timeout=TIMEOUT, context=ctx)
+        try:
             body = resp.read() if hasattr(resp, "read") else b""
+        finally:
+            try:
+                resp.close()
+            except Exception:
+                pass
         text = body.decode("utf-8", errors="replace")
         data = json.loads(text)
         if not isinstance(data, dict):
