@@ -347,6 +347,30 @@ async def main():
     except Exception:
         pass
 
+    # Print ToolsRegistry at startup for visibility/debug
+    try:
+        avail = tools.available() if hasattr(tools, "available") else []
+        if isinstance(avail, list) and avail:
+            print("AI: ToolsRegistry:", ", ".join(avail))
+            try:
+                await bus.publish("ui/print", {"text": "[Main] Tools: " + ", ".join(avail)}, sender="Main")
+            except Exception:
+                pass
+    except Exception:
+        pass
+
+    # Print ToolsRegistry at startup for visibility/debug
+    try:
+        avail = tools.available() if hasattr(tools, "available") else []
+        if isinstance(avail, list) and avail:
+            print("AI: ToolsRegistry:", ", ".join(avail))
+            try:
+                await bus.publish("ui/print", {"text": "[Main] Tools: " + ", ".join(avail)}, sender="Main")
+            except Exception:
+                pass
+    except Exception:
+        pass
+
     ui_tasks: List[asyncio.Task] = []
     t1 = asyncio.create_task(ui_printer(bus), name="ui_printer")
     t2 = asyncio.create_task(summary_printer(bus), name="summary_printer")
