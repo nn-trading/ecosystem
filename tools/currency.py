@@ -36,4 +36,6 @@ def convert(amount: float, from_currency: str, to_currency: str) -> Dict[str, An
 
 
 def register(reg) -> None:
-    reg.add("currency.convert", convert, desc="Convert currencies using exchangerate.host -> {ok,amount,from,to,rate,result}")
+    desc = "Convert currencies using exchangerate.host -> {ok,amount,from,to,rate,result}"
+    reg.add("currency.convert", convert, desc=desc)
+    reg.add("fx.convert", convert, desc=desc)
