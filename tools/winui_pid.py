@@ -11,13 +11,10 @@ HWND   = wintypes.HWND
 DWORD  = wintypes.DWORD
 LPARAM = wintypes.LPARAM
 WPARAM = wintypes.WPARAM
-try:
-    LRESULT = wintypes.LRESULT
-except AttributeError:
-    try:
-        LRESULT = wintypes.LPARAM
-    except Exception:
-        LRESULT = ctypes.c_size_t
+# robust LRESULT definition across Python versions
+LRESULT = getattr(wintypes, "LRESULT", None)
+if LRESULT is None:
+    LRESULT = getattr(wintypes, "LPARAM", getattr(ctypes, "c_ssize_t", ctypes.c_size_t))
 BOOL   = wintypes.BOOL
 UINT   = wintypes.UINT
 LPWSTR = wintypes.LPWSTR

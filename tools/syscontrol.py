@@ -36,6 +36,10 @@ def launch(exe: str, args: Optional[List[str]] = None, cwd: Optional[str] = None
             stderr=subprocess.DEVNULL,
             creationflags=0x00000008,  # DETACHED_PROCESS
         )
+        try:
+            os.environ["LAST_LAUNCH_PID"] = str(int(proc.pid))
+        except Exception:
+            pass
         return {"ok": True, "pid": int(proc.pid), "exe": cmd0}
     except FileNotFoundError as e:
         try:
