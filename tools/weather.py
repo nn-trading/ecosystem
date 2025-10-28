@@ -31,8 +31,8 @@ def _detect_city_from_text(text: str) -> Optional[str]:
     t = text.strip()
     # Trim trailing filler like 'right now' / 'now' / 'today' / 'currently'
     t = re.sub(r"\b(right\s+now|now|currently|today)\b[?.!]*$", "", t, flags=re.IGNORECASE).strip()
-    # Prefer pattern: 'in <city>' but stop before filler/punctuation/end; use non-greedy capture
-    m = re.search(r"\bin\s+([A-Za-z][A-Za-z .\-']+?)(?=\s*(?:right\s+now|now|currently|today)\b|[?.!]|$)", t, flags=re.IGNORECASE)
+    # Prefer pattern: 'in <city>' but stop before filler/punctuation/end; use non-greedy capture and don't eat 'for N days'
+    m = re.search(r"\bin\s+([A-Za-z][A-Za-z .\-']+?)(?=\s*(?:for\s+\d+\s+days?\b|right\s+now|now|currently|today)\b|[?.!]|$)", t, flags=re.IGNORECASE)
     if m:
         return _clean_city(m.group(1))
     # Fallback: 'in <city>' to end

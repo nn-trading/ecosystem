@@ -5,12 +5,7 @@ import inspect
 from dataclasses import dataclass
 from typing import Any, Dict, Optional, AsyncIterator, List, Tuple
 
-@dataclass
-class Envelope:
-    topic: str
-    payload: Dict[str, Any]
-    sender: str
-    job_id: Optional[str] = None
+from .envelope import Envelope
 
 class EventBus:
     """
@@ -35,7 +30,7 @@ class EventBus:
         job_id: Optional[str] = None,
     ) -> None:
         """Publish one event to all matching subscribers."""
-        env = Envelope(topic=topic, payload=payload or {}, sender=sender, job_id=job_id)
+        env = Envelope(type=topic, payload=payload or {}, src=sender, job_id=job_id)
 
         # Take a snapshot of destination queues under lock
         async with self._lock:
