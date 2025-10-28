@@ -1,0 +1,39 @@
+Ecosystem AI runbook (ASCII-only)
+
+Quick start
+-----------
+1) Clean any stray reserved-name files
+   powershell -NoProfile -File dev\clean_strays.ps1
+
+2) Stop any running headless instance (safe to run anytime)
+   powershell -NoProfile -File dev\stop_headless.ps1
+
+3) Start headless for a short, finite run (writes logs and a health snapshot on exit)
+   powershell -NoProfile -File dev\start_headless.ps1 -STOP_AFTER_SEC 12 -HEARTBEAT_SEC 1 -HEALTH_SEC 2
+
+4) Check status and recent output
+   powershell -NoProfile -File dev\status.ps1
+
+5) Manual health snapshot (optional)
+   powershell -NoProfile -Command "python dev/health_check.py | Out-File -FilePath 'logs/headless_health.json' -Encoding ascii -Append"
+
+Key files
+---------
+- Event log (JSONL): workspace\logs\events.jsonl
+- Headless stdout:   logs\headless_stdout.log
+- Headless stderr:   logs\headless_stderr.log
+- Health snapshot:   logs\headless_health.json
+- PID file:          logs\headless_pid.txt
+
+Notes
+-----
+- Auto-resume on restart is enabled. On startup, look for these lines in headless_stdout.log:
+    AI: [Main] About to publish resume
+    AI: [Main] publish_resume completed
+- If start_headless prints "Headless already running", it will not write a new health snapshot.
+  Run the stop script first, then start again.
+- All log-writing uses UTF-8 for JSONL and ASCII for the health snapshot to avoid Windows charmap issues.
+- To run indefinitely as a service, pass 0 for STOP_AFTER_SEC (it will wait forever):
+    powershell -NoProfile -File dev\start_headless.ps1 -STOP_AFTER_SEC 0 -HEARTBEAT_SEC 5 -HEALTH_SEC 60
+- Smoke tests:
+    pytest -q --disable-warnings --maxfail=1
