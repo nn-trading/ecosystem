@@ -2,20 +2,19 @@ $ErrorActionPreference = "SilentlyContinue"
 $repo = Split-Path -Parent $PSScriptRoot
 Set-Location $repo
 
+# Use literal names for problematic files; escape $ with backtick
 $targets = @(
-  "$repo\$null",
-  "$repo\CON",
-  "$repo\-"
+  (Join-Path $repo '`$null'),
+  (Join-Path $repo 'CON'),
+  (Join-Path $repo '-')
 )
 
 foreach ($t in $targets) {
   if (Test-Path -LiteralPath $t) {
     try {
-      # Try normal delete
       Remove-Item -LiteralPath $t -Force -ErrorAction Stop
       Write-Host ("Removed: {0}" -f $t)
     } catch {
-      # Try extended path prefix
       $long = "\\?\" + $t
       try {
         Remove-Item -LiteralPath $long -Force -ErrorAction Stop
