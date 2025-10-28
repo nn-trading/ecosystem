@@ -86,6 +86,8 @@ for _m in (
     "tools.archive",
     "tools.http",
     "tools.weather",
+    "tools.webfetch",
+    "tools.currency",
 ):
     _safe_register(_m)
 

@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 import os
+from pathlib import Path
 from agents.base_agent import BaseAgent
 from memory.eventlog import EventLog
 
@@ -52,9 +53,20 @@ class LoggerAgent(BaseAgent):
         # Compact recent context for Comms/others (if they listen)
         recent_all = self.log.recent(LOGGER_RECENT_FOR_COMMS)
         recent = [e for e in recent_all if (e.get("topic") not in ("memory/context",))]
+        # Publish a compact projection to avoid huge nested payloads
+        def _compact(e):
+            p = e.get("payload") or {}
+            return {
+                "id": e.get("id"),
+                "ts": e.get("ts"),
+                "topic": e.get("topic"),
+                "sender": e.get("sender"),
+                "payload_keys": list(p.keys())[:16]
+            }
+        recent_compact = [_compact(e) for e in recent]
         await self.bus.publish("memory/context", {
-            "recent": recent,
-            "count": len(recent),
+            "recent": recent_compact,
+            "count": len(recent_compact),
             "max_keep": LOGGER_MAX_KEEP,
             "stats": stats
         }, sender=self.name)
@@ -62,34 +74,43 @@ class LoggerAgent(BaseAgent):
         await self._say("Summary ready.")
 
         # Subscribe to EVERYTHING and append
-        async for env in self.bus.subscribe_prefix(""):
-            try:
-                # Always append first
-                self.log.append(env.topic, env.sender, env.payload)
+        try:
+            async for env in self.bus.subscribe_prefix(""):
+                # Skip appending known-large topics to SQLite to prevent oversized payload errors
+                if env.topic == "memory/context":
+                    continue
+                try:
+                    # Always append first
+                    self.log.append(env.topic, env.sender, env.payload)
 
-                # Respond to resummarize requests to keep DB lean and summaries fresh
-                if env.topic == "log/resummarize":
-                    rolled = self.log.rollup(max_keep=LOGGER_MAX_KEEP)
-                    stats = self.log.stats()
-                    top_topics_str = ", ".join(f"{k}x{v}" for (k, v) in rolled.get("top_topics", [])) or "-"
-                    summary_text = (
-                        "## Session Summary (rolling)\n\n"
-                        f"- Lines summarized: {rolled.get('summarized', 0)}\n"
-                        f"- Kept recent: {rolled.get('kept', 0)} (max {LOGGER_MAX_KEEP})\n"
-                        f"- Top (rolled) topics: {top_topics_str}\n"
-                    )
-                    await self.bus.publish("memory/summary", {"text": summary_text}, sender=self.name)
-                    # Also refresh compact recent context
-                    recent_all = self.log.recent(LOGGER_RECENT_FOR_COMMS)
-                    recent = [e for e in recent_all if (e.get("topic") not in ("memory/context",))]
-                    await self.bus.publish("memory/context", {
-                        "recent": recent,
-                        "count": len(recent),
-                        "max_keep": LOGGER_MAX_KEEP,
-                        "stats": stats
-                    }, sender=self.name)
-            except Exception as e:
-                # Never crash logger; surface a minimal warning
-                await self.bus.publish("ui/print", {
-                    "text": f"{self.name}: WARN could not log event {env.topic}: {e}"
-                }, sender=self.name)
+                    # Respond to resummarize requests to keep DB lean and summaries fresh
+                    if env.topic == "log/resummarize":
+                        rolled = self.log.rollup(max_keep=LOGGER_MAX_KEEP)
+                        stats = self.log.stats()
+                        top_topics_str = ", ".join(f"{k}x{v}" for (k, v) in rolled.get("top_topics", [])) or "-"
+                        summary_text = (
+                            "## Session Summary (rolling)\n\n"
+                            f"- Lines summarized: {rolled.get('summarized', 0)}\n"
+                            f"- Kept recent: {rolled.get('kept', 0)} (max {LOGGER_MAX_KEEP})\n"
+                            f"- Top (rolled) topics: {top_topics_str}\n"
+                        )
+                        await self.bus.publish("memory/summary", {"text": summary_text}, sender=self.name)
+                        # Also refresh compact recent context
+                        recent_all = self.log.recent(LOGGER_RECENT_FOR_COMMS)
+                        recent = [e for e in recent_all if (e.get("topic") not in ("memory/context",))]
+                        recent_compact = [_compact(e) for e in recent]
+                        await self.bus.publish("memory/context", {
+                            "recent": recent_compact,
+                            "count": len(recent_compact),
+                            "max_keep": LOGGER_MAX_KEEP,
+                            "stats": stats
+                        }, sender=self.name)
+                except Exception as e:
+                    # Never crash logger; surface a minimal warning (suppress for memory/context which we skip)
+                    if env.topic != "memory/context":
+                        await self.bus.publish("ui/print", {
+                            "text": f"{self.name}: WARN could not log event {env.topic}: {e}"
+                        }, sender=self.name)
+        except BaseException:
+            # Gracefully exit on task cancel or other termination
+            return

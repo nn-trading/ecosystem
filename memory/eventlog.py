@@ -6,10 +6,19 @@ from pathlib import Path
 from typing import Dict, Any, List, Tuple, Optional
 
 import os
-# Use unified ecosystem memory DB under C:\bots\data by default
-DATA_DB_ENV = os.environ.get("ECOSYS_MEMORY_DB", r"C:\\bots\\data\\memory.db")
-DB_PATH = Path(DATA_DB_ENV)
-DB_PATH.parent.mkdir(parents=True, exist_ok=True)
+# Resolve DB path at runtime so tests can override via ECOSYS_MEMORY_DB even if module was pre-imported.
+def _default_db_path() -> Path:
+    p = os.environ.get("ECOSYS_MEMORY_DB")
+    if p:
+        try:
+            return Path(p)
+        except Exception:
+            pass
+    try:
+        root = Path(__file__).resolve().parent.parent
+    except Exception:
+        root = Path(os.getcwd())
+    return root / "var" / "events.db"
 
 SCHEMA_SQL = """
 PRAGMA journal_mode=WAL;
@@ -58,8 +67,12 @@ END;
 """
 
 class EventLog:
-    def __init__(self, db_path: Path = DB_PATH):
-        self.db_path = Path(db_path)
+    def __init__(self, db_path: Optional[Path] = None):
+        self.db_path = Path(db_path) if db_path else _default_db_path()
+        try:
+            os.makedirs(str(self.db_path.parent), exist_ok=True)
+        except Exception:
+            pass
         self.conn = sqlite3.connect(str(self.db_path))
         self.conn.execute("PRAGMA synchronous=NORMAL;")
         self.conn.execute("PRAGMA temp_store=MEMORY;")

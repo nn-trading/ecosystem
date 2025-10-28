@@ -29,3 +29,6 @@ logs/*.out
 logs/*.json
 !logs/tasks.json
 
+# Eval sandbox
+workspace/eval_sandbox/
+

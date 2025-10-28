@@ -8,7 +8,8 @@
   [switch]$EnsureVenv = $true,
   [switch]$EnsureDeps = $true,
   [switch]$Background = $true,
-  [string]$PythonExe = ""
+  [string]$PythonExe = "",
+  [switch]$Stop = $false
 )
 $ErrorActionPreference = 'Stop'
 $repo = $PSScriptRoot
@@ -20,6 +21,28 @@ New-Item -ItemType Directory -Force -Path $logs | Out-Null
 $stdout = Join-Path $logs 'start_stdout.log'
 $stderr = Join-Path $logs 'start_stderr.log'
 $pidFile = Join-Path $logs 'ecosys_pid.txt'
+
+# Optional stop helper
+if ($Stop) {
+  $stopped = @()
+  $headlessPidFile = Join-Path $logs 'headless_pid.txt'
+  if (Test-Path $headlessPidFile) {
+    try {
+      $pid = Get-Content $headlessPidFile | Select-Object -First 1
+      if ($pid) { Stop-Process -Id $pid -Force -ErrorAction SilentlyContinue; $stopped += $pid }
+    } catch {}
+    try { Remove-Item $headlessPidFile -ErrorAction SilentlyContinue } catch {}
+  }
+  if (Test-Path $pidFile) {
+    try {
+      $pid = Get-Content $pidFile | Select-Object -First 1
+      if ($pid) { Stop-Process -Id $pid -Force -ErrorAction SilentlyContinue; $stopped += $pid }
+    } catch {}
+    try { Remove-Item $pidFile -ErrorAction SilentlyContinue } catch {}
+  }
+  Write-Host ("[stop] Stopped PIDs: {0}" -f ($stopped -join ', '))
+  return
+}
 
 function Find-Python() {
   param([string]$preferred)
@@ -55,7 +78,16 @@ function Ensure-Deps([string]$py) {
 $pyExe = if ($EnsureVenv) { Ensure-Venv } else { Find-Python -preferred $PythonExe }
 if ($EnsureDeps) { Ensure-Deps -py $pyExe }
 
+
+# Pre-start maintenance: purge logs, vacuum DBs, run pytest
+try {
+  Write-Host "[start] Running pre-start maintenance (purge logs, vacuum, pytest)..."
+  & (Join-Path $repo 'maintain.ps1') -PurgeLogs -VacuumDbs -Restart:$false -EnsureDeps:$EnsureDeps -RunPytest:$true | Out-Host
+} catch { Write-Host "[start] Pre-start maintenance error: $($_.Exception.Message)" }
+
 # Build command line with per-process environment via cmd /c
+# Resolve a unified SQLite EventLog path for all agents/tools
+$eventsDb = Join-Path (Join-Path $repo 'var') 'events.db'
 $envParts = @(
   'set ECOSYS_HEADLESS=' + ($(if ($Headless) { '1' } else { '0' })),
   'set STOP_AFTER_SEC=' + $StopAfterSec,
@@ -64,8 +96,11 @@ $envParts = @(
   'set RESUMMARIZE_SEC=' + $ResummarizeSec,
   'set MEM_ROTATE_SEC=' + $MemRotateSec,
   'set ECOSYS_REPO_ROOT=' + $repo,
+  'set ECOSYS_MEMORY_DB=' + $eventsDb,
   'set ASSISTANT_LOG_DIR=' + $logs,
   'set ECOSYS_ASSISTANT_LOG_DIR=' + $logs,
+  'set ENABLE_JSONL_RECORDER=0',
+  'set MEM_KEEP_LAST=2000',
   'set PYTHONUNBUFFERED=1',
   'set PYTHONIOENCODING=utf-8'
 )

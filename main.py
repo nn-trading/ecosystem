@@ -378,20 +378,37 @@ async def main():
             pass
 
     # Recorder and rotation
-    rec_task = asyncio.create_task(bus_recorder(bus, memory), name="bus_recorder")
-    _watch_task("bus_recorder", rec_task)
+    enable_jsonl = str(os.environ.get("ENABLE_JSONL_RECORDER", "1")).strip().lower() not in ("0", "false", "no", "off")
+    if enable_jsonl:
+        rec_task = asyncio.create_task(bus_recorder(bus, memory), name="bus_recorder")
+        _watch_task("bus_recorder", rec_task)
+    else:
+        try:
+            print("AI: [Main] JSONL recorder disabled via ENABLE_JSONL_RECORDER")
+        except Exception:
+            pass
 
     async def _rotate_loop():
+        try:
+            keep_last = int(os.environ.get("MEM_KEEP_LAST", str(DEFAULT_KEEP_LAST)))
+        except Exception:
+            keep_last = DEFAULT_KEEP_LAST
         while True:
             try:
                 await asyncio.sleep(int(os.environ.get("MEM_ROTATE_SEC", "60")))
-                await memory.rotate_keep_last(DEFAULT_KEEP_LAST)
+                await memory.rotate_keep_last(keep_last)
             except asyncio.CancelledError:
                 break
             except Exception:
                 await asyncio.sleep(60)
-    rot_task = asyncio.create_task(_rotate_loop(), name="mem_rotate_loop")
-    _watch_task("mem_rotate_loop", rot_task)
+    if enable_jsonl:
+        rot_task = asyncio.create_task(_rotate_loop(), name="mem_rotate_loop")
+        _watch_task("mem_rotate_loop", rot_task)
+    else:
+        try:
+            print("AI: [Main] Rotation disabled because JSONL recorder is disabled")
+        except Exception:
+            pass
 
     # Bridges: service-only ctrl + chat bridge
     ctrl_topics = ["log/resummarize", "system/health", "system/heartbeat"]

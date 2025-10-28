@@ -1,10 +1,33 @@
 # C:\bots\ecosys\core\memory.py
 from __future__ import annotations
-import os, io, json, time, asyncio, tempfile, shutil
+import os, io, json, time, asyncio, tempfile, shutil, unicodedata
 from dataclasses import dataclass, asdict
 from typing import Any, Dict, Optional, Iterable, List, Tuple
 
-ROOT = os.environ.get("ECOSYS_REPO_ROOT") or os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
+_ENV_ROOT = os.environ.get("ECOSYS_REPO_ROOT")
+# Include broader set of Unicode separators/format characters
+_WHITESPACE = " \t\r\n\f\v\u00a0\u2000\u2001\u2002\u2003\u2004\u2005\u2006\u2007\u2008\u2009\u200a\u202f\u205f\u3000\ufeff\u200b\u2060"
+
+def _clean_env_path(val: str) -> str:
+    try:
+        s = val.strip().strip('"').strip("'")
+    except Exception:
+        s = str(val)
+    # Trim leading/trailing Unicode separators and control/format chars
+    i, j = 0, len(s)
+    def is_trim(ch: str) -> bool:
+        cat = unicodedata.category(ch)
+        return cat.startswith("Z") or cat.startswith("C")
+    while i < j and is_trim(s[i]):
+        i += 1
+    while j > i and is_trim(s[j-1]):
+        j -= 1
+    return s[i:j]
+
+if _ENV_ROOT:
+    ROOT = os.path.abspath(_clean_env_path(_ENV_ROOT))
+else:
+    ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
 LOG_DIR = os.path.join(ROOT, "workspace", "logs")
 EVENTS_FILE = os.path.join(LOG_DIR, "events.jsonl")
 SUMMARIES_FILE = os.path.join(LOG_DIR, "summaries.jsonl")
@@ -35,9 +58,14 @@ class Memory:
     - summaries.jsonl: roll-up text for archived ranges (for fast cold-start recall).
     """
     def __init__(self, log_dir: Optional[str] = None):
-        self.log_dir = log_dir or LOG_DIR
-        self.events_path = EVENTS_FILE if log_dir is None else os.path.join(log_dir, "events.jsonl")
-        self.summaries_path = SUMMARIES_FILE if log_dir is None else os.path.join(log_dir, "summaries.jsonl")
+        base = log_dir or LOG_DIR
+        try:
+            clean = base.strip().strip('"').strip("'")
+        except Exception:
+            clean = str(base)
+        self.log_dir = os.path.normpath(clean)
+        self.events_path = os.path.join(self.log_dir, "events.jsonl")
+        self.summaries_path = os.path.join(self.log_dir, "summaries.jsonl")
         os.makedirs(self.log_dir, exist_ok=True)
         self._lock = asyncio.Lock()
 
@@ -129,9 +157,15 @@ class Memory:
         Keep only the last `keep_last` lines in events.jsonl (atomically).
         Returns (old_count, new_count). No-op if already small.
         """
-        total = self.count_lines(self.events_path)
-        if total <= keep_last:
-            return (total, total)
+        # Fast path: avoid full line count for very large files or when MEM_ROTATE_FAST is truthy
+        size = os.path.getsize(self.events_path) if os.path.exists(self.events_path) else 0
+        fast_env = str(os.environ.get("MEM_ROTATE_FAST", "0")).strip().lower() not in ("0", "false", "no", "off")
+        if size > 128 * 1024 * 1024 or fast_env:
+            total = -1
+        else:
+            total = self.count_lines(self.events_path)
+            if total <= keep_last:
+                return (total, total)
 
         tail_lines = self._tail_lines(self.events_path, keep_last)
         async with self._lock:
