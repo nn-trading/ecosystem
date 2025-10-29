@@ -4,6 +4,7 @@ import asyncio
 import inspect
 import re
 from typing import Any, Optional
+import os
 
 COPY_RX = re.compile(r'\bcopy\b', re.IGNORECASE)
 
@@ -15,6 +16,13 @@ class TesterAgent:
         self.memory = memory
         self.tools = tools
         self._awaiting_copy: bool = False  # set True when a plan asked for copy
+        # QA watchdog counters
+        try:
+            self._qa_watch_total = int((os.environ.get("QA_WATCHDOG_N", "0") or "0"))
+        except Exception:
+            self._qa_watch_total = 0
+        self._qa_pass = 0
+        self._qa_fail = 0
 
     def _saw_copy(self, plan: dict) -> bool:
         try:
@@ -45,6 +53,12 @@ class TesterAgent:
                         if not txt:
                             # emit test failed and re-issue a corrective task
                             await self.bus.publish("test/failed", {"reason": "empty clipboard"}, sender=self.name, job_id=job_id)
+                            if self._qa_watch_total > 0 and (self._qa_pass + self._qa_fail) < self._qa_watch_total:
+                                self._qa_fail += 1
+                                try:
+                                    await self.bus.publish("ui/print", {"text": f"QA FAIL #{self._qa_pass + self._qa_fail}: empty clipboard"}, sender=self.name, job_id=job_id)
+                                except Exception:
+                                    pass
                             fix = "focus notepad then press ctrl+a, ctrl+c (copy again)"
                             pub = getattr(self.bus, "emit", None) or getattr(self.bus, "publish", None) or getattr(self.bus, "send", None)
                             if callable(pub):
@@ -53,6 +67,17 @@ class TesterAgent:
                                     await r
                         else:
                             await self.bus.publish("test/passed", {"text": txt, "length": len(txt)}, sender=self.name, job_id=job_id)
+                            if self._qa_watch_total > 0 and (self._qa_pass + self._qa_fail) < self._qa_watch_total:
+                                self._qa_pass += 1
+                                try:
+                                    await self.bus.publish("ui/print", {"text": f"QA PASS #{self._qa_pass}"}, sender=self.name, job_id=job_id)
+                                except Exception:
+                                    pass
+                                if (self._qa_pass + self._qa_fail) >= self._qa_watch_total:
+                                    try:
+                                        await self.bus.publish("ui/print", {"text": f"QA watchdog complete: {self._qa_pass} pass, {self._qa_fail} fail"}, sender=self.name, job_id=job_id)
+                                    except Exception:
+                                        pass
 
                 # subscribe
                 on("task/plan", _plan_handler)

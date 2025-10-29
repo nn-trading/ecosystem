@@ -1,5 +1,10 @@
 # dev/write_resume_marker.py
 import os, sys, json, time, sqlite3
+try:
+    from core.ascii_writer import write_jsonl_ascii
+except Exception:
+    sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
+    from core.ascii_writer import write_jsonl_ascii
 
 # Usage: python dev/write_resume_marker.py "message text"
 
@@ -30,8 +35,7 @@ def write_assistant_jsonl(cfg: dict, message: str):
     rec = {"ts": time.time(), "event": "resume_checkpoint", "text": message}
     p = os.path.join(log_dir, "assistant.jsonl")
     try:
-        with open(p, "a", encoding="utf-8") as f:
-            f.write(json.dumps(rec, ensure_ascii=True) + "\n")
+        write_jsonl_ascii(p, rec)
     except Exception:
         pass
 

@@ -23,6 +23,8 @@ def notepad_type_copy(text: str = "123") -> Dict[str, Any]:
     if not res.get("ok"):
         return res
     pid = res["pid"]
+    # Wait for window to appear
+    _ = _call("win.focus_pid", pid=pid)
     s = _call("win.set_text_pid", pid=pid, text=text)
     if not s.get("ok"):
         return s
@@ -46,6 +48,12 @@ def paste_to_new_notepad() -> Dict[str, Any]:
     return {"ok": True, "pid": pid2, "text": p2.get("text", "")}
 
 
+def paste_clipboard() -> Dict[str, Any]:
+    if not DANGER:
+        return {"ok": False, "error": "danger_mode off"}
+    return _call("ui.paste")
+
+
 def register(reg) -> None:
     global _tools
     _tools = reg
@@ -57,3 +65,4 @@ def register(reg) -> None:
     # Provide required aliases
     reg.add("uimacros.notepad_type_and_copy", notepad_type_copy,   desc="Alias: Notepad type and copy")
     reg.add("uimacros.notepad_paste",         paste_to_new_notepad,desc="Alias: Notepad paste from clipboard")
+    reg.add("uimacros.paste_clipboard",      paste_clipboard,   desc="Alias: Paste to active window with verification cascade")

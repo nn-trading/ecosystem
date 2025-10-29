@@ -32,7 +32,18 @@ Notes
     AI: [Main] publish_resume completed
 - If start_headless prints "Headless already running", it will not write a new health snapshot.
   Run the stop script first, then start again.
-- All log-writing uses UTF-8 for JSONL and ASCII for the health snapshot to avoid Windows charmap issues.
+- File encoding policy (Windows-safe):
+  - JSONL logs are written with UTF-8 encoding and ensure_ascii=True so file contents remain ASCII-only
+  - Health snapshot uses ASCII
+- Shell constraints:
+  - Use single-command invocations; prefer python -c or dedicated scripts
+  - Avoid heredocs and multi-command separators in a single call
+- Task tracking:
+  - Authoritative: logs\tasks.json
+  - Do not rely on external sessions\<id>\TASKS.md (may fail on Windows codepages)
+- Memory DB:
+  - Canonical path: C:\bots\assistant\memory.db (configured in assistant\config.json)
+  - Do not migrate to var\events.db unless explicitly instructed; if needed later, update config and migrate data
 - To run indefinitely as a service, pass 0 for STOP_AFTER_SEC (it will wait forever):
     powershell -NoProfile -File dev\start_headless.ps1 -STOP_AFTER_SEC 0 -HEARTBEAT_SEC 5 -HEALTH_SEC 60
 - Smoke tests:

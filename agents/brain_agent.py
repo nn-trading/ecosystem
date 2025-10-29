@@ -116,6 +116,30 @@ class BrainAgent:
         self.memory = memory
         self.tools = tools
 
+        # Retry budget to prevent infinite re-plans
+        try:
+            import os as _os
+            self._retry_budget_default = int((_os.environ.get("BRAIN_RETRY_BUDGET", "3") or "3"))
+        except Exception:
+            self._retry_budget_default = 3
+        self._retry_counts: dict[str, int] = {}
+
+    def _reset_budget(self, job_id: str | None) -> None:
+        try:
+            jid = str(job_id or "")
+            self._retry_counts[jid] = 0
+        except Exception:
+            pass
+
+    def _inc_and_check_budget(self, job_id: str | None) -> bool:
+        try:
+            jid = str(job_id or "")
+            self._retry_counts[jid] = int(self._retry_counts.get(jid, 0)) + 1
+            budget = int(getattr(self, "_retry_budget_default", 3))
+            return self._retry_counts[jid] <= budget
+        except Exception:
+            return True
+
     async def _call_tool(self, tool_name: str, args: Dict[str, Any]) -> Any:
         reg = self.tools
         for meth in ("call","invoke","run","exec","execute","apply"):
@@ -324,40 +348,66 @@ class BrainAgent:
     async def run(self) -> None:
         try:
             on = getattr(self.bus, "on", None)
-            if callable(on):
-                # Existing handler for new user tasks
-                async def _handler(msg: Any) -> None:
-                    await self.plan(msg)
-                r1 = on("task/new", _handler)
+            if not callable(on):
+                return
 
-                # **Handler for retry (auto-fix) events**
-                async def _retry_handler(msg: Any) -> None:
-                    # If a plan is provided in the retry message (from AutofixAgent), reuse it
+            async def _on_new(msg: Any) -> None:
+                try:
+                    job_id = getattr(msg, "job_id", None) or (msg.get("job_id") if isinstance(msg, dict) else None)
+                    self._reset_budget(job_id)
+                    await self.plan(msg)
+                except Exception:
+                    pass
+
+            async def _on_retry(msg: Any) -> None:
+                try:
+                    job_id = getattr(msg, "job_id", None) or (msg.get("job_id") if isinstance(msg, dict) else None)
+                    if not self._inc_and_check_budget(job_id):
+                        # Budget exhausted: emit notice and stop retrying this job
+                        try:
+                            await self.bus.publish(
+                                "task/budget_exhausted",
+                                {"job_id": job_id},
+                                sender=self.name, job_id=job_id,
+                            )
+                        except Exception:
+                            pass
+                        try:
+                            await self.bus.publish(
+                                "ui/print",
+                                {"text": f"{self.name}: retry budget exhausted for job {job_id}"},
+                                sender=self.name, job_id=job_id,
+                            )
+                        except Exception:
+                            pass
+                        return
+
                     plan = None
                     feedback = None
                     if isinstance(msg, dict):
-                        plan = msg.get("data", {}).get("plan")
-                        feedback = msg.get("data", {}).get("feedback")
+                        data = msg.get("data") or {}
+                        plan = data.get("plan")
+                        feedback = data.get("feedback")
+                    if feedback:
+                        await self.bus.publish(
+                            "ui/print",
+                            {"text": f"{self.name}: (Autofix) {feedback}"},
+                            sender=self.name, job_id=job_id,
+                        )
                     if plan:
-                        job_id = msg.get("job_id") if isinstance(msg, dict) else getattr(msg, "job_id", None)
-                        # Inform via UI that an autofix is being applied (optional)
-                        if feedback:
-                            await self.bus.publish(
-                                "ui/print",
-                                {"text": f"{self.name}: (Autofix) {feedback}"},
-                                sender=self.name, job_id=job_id
-                            )
-                        # Re-publish the plan and its steps for execution
                         await self.bus.publish("task/plan", plan, sender=self.name, job_id=job_id)
                         await self.bus.publish("task/exec", {"steps": plan.get("steps", [])}, sender=self.name, job_id=job_id)
                     else:
-                        # No plan provided – treat it like a new task
                         await self.plan(msg)
+                except Exception:
+                    pass
 
-                r2 = on("task/retry", _retry_handler)
+            r1 = on("task/new", _on_new)
+            r2 = on("task/retry", _on_retry)
 
-                # Await handlers if needed (for asynchronous on() implementations)
-                if inspect.isawaitable(r1): await r1
-                if inspect.isawaitable(r2): await r2
+            if inspect.isawaitable(r1):
+                await r1
+            if inspect.isawaitable(r2):
+                await r2
         except Exception:
             return

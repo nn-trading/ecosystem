@@ -98,6 +98,9 @@ for _m in (
 ):
     _safe_register(_m)
 
+# Load additional assertions module
+_safe_register("tools.assertions")
+
 # ---------- Shims (safety net) ----------
 import os, shutil, subprocess
 from pathlib import Path
