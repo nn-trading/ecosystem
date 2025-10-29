@@ -52,7 +52,7 @@ for d in (LOGS, WS_LOGS):
         results.append({'check':'orphan_backups_err','dir':str(d),'err':str(e)})
 
 # Memory DB presence
-mem_db = os.environ.get('ECOSYS_MEMORY_DB', r'C:\\bots\\data\\memory.db')
+mem_db = os.environ.get('ECOSYS_MEMORY_DB', str(REPO / 'var' / 'events.db'))
 try:
     p = Path(mem_db)
     results.append({'check':'memory_db_path', 'path':str(p), 'exists':p.exists()})
