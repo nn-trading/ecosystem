@@ -1,5 +1,5 @@
 import sqlite3, json
-db = r"C:\bots\data\memory.db"
+import os; db = os.environ.get('ECOSYS_MEMORY_DB', os.path.join(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')), 'var', 'events.db'))
 con = sqlite3.connect(db)
 cur = con.cursor()
 def rows(sql, args=()):
