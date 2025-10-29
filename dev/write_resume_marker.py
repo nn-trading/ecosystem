@@ -37,7 +37,7 @@ def write_assistant_jsonl(cfg: dict, message: str):
 
 
 def write_sqlite_notes(cfg: dict, message: str):
-    db = os.environ.get("ECOSYS_MEMORY_DB", cfg.get("memory_db") or r"C:\\bots\\data\\memory.db")
+    db = os.environ.get("ECOSYS_MEMORY_DB", cfg.get("memory_db") or os.path.join(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')), 'var', 'events.db'))
     ensure_dirs(os.path.dirname(db))
     try:
         con = sqlite3.connect(db)
