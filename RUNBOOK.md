@@ -5,11 +5,11 @@ This file tracks session status and resume checkpoints. ASCII-only/UTF-8.
 ## Current status
 - Repo: C:\bots\ecosys
 - Branch: eval-battery-and-maintenance-fixes
-- Commit: d8046a6
+- Commit: fb8808a
 - Tools: winui_pid LRESULT fallback in place; import OK (Python 3.12). SendMessageW.restype=c_longlong.
-- Tests: pytest 24 passed, 1 skipped (UI macro; gated by AGENT_DANGER_MODE), 2 warnings
+- Tests: pytest 30 passed, 1 skipped (UI macro; gated by AGENT_DANGER_MODE), 3 warnings
 - Pip: restored via ensurepip; requirements installed
-- Working tree: clean after commit
+- Working tree: 1 untracked (dev\\run_asat.ps1); stray CON removed
 
 ## Latest checks (2025-10-28)
 - ToolsRegistry: lists win.* and ui.* tools; registry OK
