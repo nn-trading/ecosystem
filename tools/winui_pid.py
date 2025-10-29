@@ -224,7 +224,8 @@ def _set_edit_text(h_edit: int, text: str) -> None:
     user32.SendMessageW(HWND(h_edit), WM_SETTEXT, 0, ctypes.addressof(buf))
 
 def _copy_from_edit(h_edit: int) -> None:
-    user32.SendMessageW(HWND(h_edit), EM_SETSEL, 0, -1)
+    ln = int(user32.SendMessageW(HWND(h_edit), WM_GETTEXTLENGTH, 0, 0))
+    user32.SendMessageW(HWND(h_edit), EM_SETSEL, 0, ln)
     user32.SendMessageW(HWND(h_edit), WM_COPY, 0, 0)
 
 def _paste_into_edit(h_edit: int) -> None:
