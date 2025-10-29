@@ -39,7 +39,7 @@ def _append_assistant_jsonl(obj: dict):
         write_jsonl_ascii(path, obj)
         ascii_line = json.dumps(obj, ensure_ascii=True)
         try:
-            db = os.environ.get("ECOSYS_MEMORY_DB", cfg.get("memory_db") or r"C:\bots\data\memory.db")
+            db = os.environ.get("ECOSYS_MEMORY_DB", cfg.get("memory_db") or os.path.join(_repo_root(), "var", "events.db"))
             con = sqlite3.connect(db)
             cur = con.cursor()
             cur.execute("CREATE TABLE IF NOT EXISTS kv (key TEXT PRIMARY KEY, value TEXT)")
