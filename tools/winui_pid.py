@@ -26,7 +26,6 @@ WM_SETTEXT         = 0x000C
 WM_COPY            = 0x0301
 WM_PASTE           = 0x0302
 EM_SETSEL          = 0x00B1
-EM_SETSEL          = 0x00B1
 
 DANGER = os.environ.get("AGENT_DANGER_MODE", "1") == "1"
 
