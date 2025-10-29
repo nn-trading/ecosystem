@@ -95,9 +95,9 @@ class EventLog:
         ts = time.time()
         data = payload or {}
         try:
-            pj = json.dumps(data, ensure_ascii=False)
+            pj = json.dumps(data, ensure_ascii=True)
         except Exception:
-            pj = json.dumps({"_raw": str(data)}, ensure_ascii=False)
+            pj = json.dumps({"_raw": str(data)}, ensure_ascii=True)
         # Mitigate oversized payloads that can blow up SQLite ("string or blob too big")
         try:
             max_bytes = int(os.environ.get("EVENTLOG_MAX_PAYLOAD", "524288"))  # 512 KB default
@@ -114,7 +114,7 @@ class EventLog:
                 if isinstance(data, dict):
                     for k, v in list(data.items())[:64]:
                         try:
-                            approx_sizes[str(k)] = len(json.dumps(v, ensure_ascii=False).encode("utf-8", "ignore"))
+                            approx_sizes[str(k)] = len(json.dumps(v, ensure_ascii=True).encode("utf-8", "ignore"))
                         except Exception:
                             approx_sizes[str(k)] = len(str(v).encode("utf-8", "ignore"))
                 summary = {
@@ -125,9 +125,9 @@ class EventLog:
                     "keys": list(data.keys())[:64] if isinstance(data, dict) else [],
                     "approx_key_sizes": approx_sizes,
                 }
-                pj = json.dumps(summary, ensure_ascii=False)
+                pj = json.dumps(summary, ensure_ascii=True)
             except Exception:
-                pj = json.dumps({"_truncated": True, "topic": topic, "approx_bytes": len(pj_bytes), "max_bytes": max_bytes}, ensure_ascii=False)
+                pj = json.dumps({"_truncated": True, "topic": topic, "approx_bytes": len(pj_bytes), "max_bytes": max_bytes}, ensure_ascii=True)
         self.conn.execute(
             "INSERT INTO events(ts, topic, sender, payload_json) VALUES (?,?,?,?)",
             (ts, topic, sender, pj),
@@ -170,7 +170,7 @@ class EventLog:
 
         self.conn.execute(
             "INSERT INTO rollups(generated_ts, summarized_count, kept_after, top_topics_json) VALUES (?,?,?,?)",
-            (time.time(), summarized, self.count(), json.dumps(top, ensure_ascii=False)),
+            (time.time(), summarized, self.count(), json.dumps(top, ensure_ascii=True)),
         )
         self.conn.commit()
 

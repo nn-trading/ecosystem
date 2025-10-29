@@ -79,7 +79,7 @@ def main():
         'new_count': len(tail_lines),
         'events_path': events,
     }
-    print(json.dumps(out, ensure_ascii=False))
+    print(json.dumps(out, ensure_ascii=True))
 
 
 if __name__ == '__main__':

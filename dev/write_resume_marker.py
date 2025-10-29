@@ -31,7 +31,7 @@ def write_assistant_jsonl(cfg: dict, message: str):
     p = os.path.join(log_dir, "assistant.jsonl")
     try:
         with open(p, "a", encoding="utf-8") as f:
-            f.write(json.dumps(rec, ensure_ascii=False) + "\n")
+            f.write(json.dumps(rec, ensure_ascii=True) + "\n")
     except Exception:
         pass
 

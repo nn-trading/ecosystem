@@ -31,7 +31,7 @@ def main():
             'events_file': mem.events_path,
         }
         await mem.append_event('memory/rotate', payload, sender='rotate_events')
-        print(json.dumps({'ok': True, **payload}, ensure_ascii=False))
+        print(json.dumps({'ok': True, **payload}, ensure_ascii=True))
 
     asyncio.run(run())
 

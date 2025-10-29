@@ -70,7 +70,7 @@ def main():
         "health_tail": hl_tail,
         "headless_pid_alive": alive,
     }
-    print(json.dumps(out, ensure_ascii=False))
+    print(json.dumps(out, ensure_ascii=True))
 
 if __name__ == "__main__":
     main()

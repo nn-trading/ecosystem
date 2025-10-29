@@ -32,5 +32,5 @@ try:
 except Exception:
     pass
 
-print(json.dumps({'tail_n': n, 'heartbeat_count': int(hb), 'health_count': int(hl), 'headless_pid_alive': alive}, ensure_ascii=False))
+print(json.dumps({'tail_n': n, 'heartbeat_count': int(hb), 'health_count': int(hl), 'headless_pid_alive': alive}, ensure_ascii=True))
 

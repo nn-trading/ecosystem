@@ -2,7 +2,7 @@
 from __future__ import annotations
 import os, asyncio, textwrap, json, datetime, sqlite3, time
 from typing import List, Dict, Any
-from core.ascii_writer import write_jsonl_ascii, write_text_ascii, write_text_ascii
+from core.ascii_writer import write_jsonl_ascii, write_text_ascii
 
 ASSISTANT_CONFIG_PATH = os.environ.get("ASSISTANT_CONFIG_PATH", r"C:\bots\assistant\config.json")
 

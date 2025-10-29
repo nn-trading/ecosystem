@@ -81,7 +81,7 @@ def _import_events(mem: Memory, elog: EventLog, events_path: str, safe_tail: int
                 job_id = obj.get('job_id')
                 if job_id is not None and isinstance(payload, dict) and '_job_id' not in payload:
                     payload = {**payload, '_job_id': job_id}
-                pj = json.dumps(payload, ensure_ascii=False)
+                pj = json.dumps(payload, ensure_ascii=True)
                 try:
                     conn.execute(
                         "INSERT INTO events(ts, topic, sender, payload_json) VALUES (?,?,?,?)",
@@ -135,7 +135,7 @@ def _import_summaries(mem: Memory, elog: EventLog, summaries_path: str, safe_tai
                 lines = int(obj.get('lines') or 0)
                 text = obj.get('text') or ''
                 payload = {"range": rng, "lines": lines, "text": text}
-                pj = json.dumps(payload, ensure_ascii=False)
+                pj = json.dumps(payload, ensure_ascii=True)
                 try:
                     conn.execute(
                         "INSERT INTO events(ts, topic, sender, payload_json) VALUES (?,?,?,?)",
