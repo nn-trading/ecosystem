@@ -15,6 +15,7 @@ __pycache__/
 C:/bots/backups/
 unz/
 var/
+runs/
 workspace.zip
 
 # Virtual environment (do not commit)

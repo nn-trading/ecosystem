@@ -2,6 +2,7 @@
 from __future__ import annotations
 import os, asyncio, textwrap, json, datetime, sqlite3, time
 from typing import List, Dict, Any
+from core.ascii_writer import write_jsonl_ascii, write_text_ascii, write_text_ascii
 
 ASSISTANT_CONFIG_PATH = os.environ.get("ASSISTANT_CONFIG_PATH", r"C:\bots\assistant\config.json")
 
@@ -35,20 +36,19 @@ def _append_assistant_jsonl(obj: dict):
     cfg = _load_assistant_config()
     path = _assistant_log_path(cfg)
     try:
-        with open(path, "a", encoding="utf-8") as f:
-            line = json.dumps(obj, ensure_ascii=False) + "\n"
-            f.write(line)
-            try:
-                db = os.environ.get("ECOSYS_MEMORY_DB", cfg.get("memory_db") or r"C:\bots\data\memory.db")
-                con = sqlite3.connect(db)
-                cur = con.cursor()
-                cur.execute("CREATE TABLE IF NOT EXISTS kv (key TEXT PRIMARY KEY, value TEXT)")
-                cur.execute("INSERT OR REPLACE INTO kv(key,value) VALUES (?,?)", ("assistant_jsonl_size", str(os.path.getsize(path))))
-                cur.execute("CREATE TABLE IF NOT EXISTS notes (id INTEGER PRIMARY KEY AUTOINCREMENT, ts REAL, session_id TEXT, key TEXT, value TEXT)")
-                cur.execute("INSERT INTO notes(ts, session_id, key, value) VALUES (?,?,?,?)", (time.time(), cfg.get("last_session") or "", "assistant_log_append", line[:500]))
-                con.commit(); con.close()
-            except Exception:
-                pass
+        write_jsonl_ascii(path, obj)
+        ascii_line = json.dumps(obj, ensure_ascii=True)
+        try:
+            db = os.environ.get("ECOSYS_MEMORY_DB", cfg.get("memory_db") or r"C:\bots\data\memory.db")
+            con = sqlite3.connect(db)
+            cur = con.cursor()
+            cur.execute("CREATE TABLE IF NOT EXISTS kv (key TEXT PRIMARY KEY, value TEXT)")
+            cur.execute("INSERT OR REPLACE INTO kv(key,value) VALUES (?,?)", ("assistant_jsonl_size", str(os.path.getsize(path))))
+            cur.execute("CREATE TABLE IF NOT EXISTS notes (id INTEGER PRIMARY KEY AUTOINCREMENT, ts REAL, session_id TEXT, key TEXT, value TEXT)")
+            cur.execute("INSERT INTO notes(ts, session_id, key, value) VALUES (?,?,?,?)", (time.time(), cfg.get("last_session") or "", "assistant_log_append", ascii_line[:500]))
+            con.commit(); con.close()
+        except Exception:
+            pass
     except Exception:
         pass
 
@@ -191,8 +191,7 @@ def _write_tasks_md() -> None:
                 except Exception:
                     pass
         text = "\n".join(lines) + "\n"
-        with open(out_md, "w", encoding="ascii", errors="ignore") as f:
-            f.write(text)
+        write_text_ascii(out_md, text)
     except Exception:
         pass
 
