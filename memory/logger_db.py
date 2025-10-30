@@ -251,6 +251,11 @@ END;
                 (time.time(), str(path), sha256, meta_json),
             )
             self.conn.commit()
+        try:
+            if getattr(self, "_mirror", None):
+                self._mirror.add_artifact(path, sha256=sha256, meta=meta)
+        except Exception:
+            pass
 
     def add_skill(self, title: str, body: str = "") -> None:
         with _DB_LOCK:
@@ -259,6 +264,11 @@ END;
                 (time.time(), title, body),
             )
             self.conn.commit()
+        try:
+            if getattr(self, "_mirror", None):
+                self._mirror.add_skill(title, body)
+        except Exception:
+            pass
 
     def add_memory(self, text: str) -> None:
         with _DB_LOCK:
@@ -267,6 +277,11 @@ END;
                 (time.time(), str(text or "")),
             )
             self.conn.commit()
+        try:
+            if getattr(self, "_mirror", None):
+                self._mirror.add_memory(text)
+        except Exception:
+            pass
 
     def stats(self) -> Dict[str, Any]:
         with _DB_LOCK:
@@ -352,18 +367,11 @@ END;
         if not query:
             return []
         type_col, agent_col = self._event_colnames()
-        # Try FTS on payload first, join by rowid
         rows: List[tuple] = []
         try:
-            sel_parts = ["e.ts"]
-            if agent_col:
-                sel_parts.append(f"e.{agent_col} AS agent")
-            else:
-                sel_parts.append("NULL AS agent")
-            if type_col:
-                sel_parts.append(f"e.{type_col} AS type")
-            else:
-                sel_parts.append("NULL AS type")
+            sel_parts = ["e.id", "e.ts"]
+            sel_parts.append(f"e.{agent_col} AS agent" if agent_col else "NULL AS agent")
+            sel_parts.append(f"e.{type_col} AS type" if type_col else "NULL AS type")
             sel_parts.append("e.payload_json")
             sql = (
                 f"SELECT {', '.join(sel_parts)} FROM events e "
@@ -381,22 +389,16 @@ END;
             if agent_col:
                 where_bits.append(f"{agent_col} LIKE ?")
                 params.append(like)
-            sel_parts = ["ts"]
-            if agent_col:
-                sel_parts.append(f"{agent_col} AS agent")
-            else:
-                sel_parts.append("NULL AS agent")
-            if type_col:
-                sel_parts.append(f"{type_col} AS type")
-            else:
-                sel_parts.append("NULL AS type")
+            sel_parts = ["id", "ts"]
+            sel_parts.append(f"{agent_col} AS agent" if agent_col else "NULL AS agent")
+            sel_parts.append(f"{type_col} AS type" if type_col else "NULL AS type")
             sel_parts.append("payload_json")
             sql = f"SELECT {', '.join(sel_parts)} FROM events WHERE (" + " OR ".join(where_bits) + ") ORDER BY id DESC LIMIT ?"
             params.append(int(k))
             cur = self.conn.execute(sql, tuple(params))
             rows = cur.fetchall()
-        out: List[Dict[str, Any]] = []
-        for (ts, agent, type_, pj) in rows:
+        dedup: Dict[int, Dict[str, Any]] = {}
+        for (eid, ts, agent, type_, pj) in rows:
             snippet = ""
             try:
                 d = json.loads(pj) if pj else {}
@@ -411,8 +413,9 @@ END;
                     snippet = str(d)[:400]
             except Exception:
                 snippet = (pj or "")[:400]
-            out.append({"ts": ts, "agent": agent, "type": type_, "snippet": snippet})
-        out.reverse()
+            dedup[int(eid)] = {"id": int(eid), "ts": ts, "agent": agent, "type": type_, "snippet": snippet}
+        # Return in ascending id order
+        out = [dedup[k] for k in sorted(dedup.keys())]
         return out
 
 _singleton: Optional[LoggerDB] = None

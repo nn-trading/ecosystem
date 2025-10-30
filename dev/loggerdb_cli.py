@@ -64,7 +64,7 @@ def cmd_artifacts(args) -> int:
 
 def cmd_snapshot_run(args) -> int:
     db = LoggerDB()
-    ts = time.strftime("%Y%m%d_%H%M%S", time.localtime())
+    ts = time.strftime("%Y%m%d-%H%M%S", time.localtime())
     run_dir = Path("runs") / ts
     run_dir.mkdir(parents=True, exist_ok=True)
 
@@ -73,6 +73,8 @@ def cmd_snapshot_run(args) -> int:
     _write_json_ascii(run_dir / "artifacts.json", db.recent_artifacts(args.n))
     top = db.top_event_types(10)
     _write_json_ascii(run_dir / "top_event_types.json", top)
+    # Compatibility with indexer expecting top_topics.json
+    _write_json_ascii(run_dir / "top_topics.json", top)
 
     lines = []
     lines.append(f"LoggerDB snapshot: {ts}")

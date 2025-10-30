@@ -4,7 +4,9 @@ param(
   [switch]$VacuumDbs = $true,
   [switch]$Restart = $true,
   [switch]$EnsureDeps = $false,
-  [switch]$RunPytest = $false
+  [switch]$RunPytest = $false,
+  [switch]$RunSnapshot = $false,
+  [switch]$RunIndex = $false
 )
 $ErrorActionPreference = 'Continue'
 $repo = Split-Path -Parent $MyInvocation.MyCommand.Path
@@ -184,7 +186,7 @@ except Exception as e:
     $vacPy = Join-Path $maintDir 'vacuum_sqlite.py'
     Set-Content -Path $vacPy -Value $vacScript -Encoding utf8
 
-    $dbs = @('C:\bots\data\memory.db', (Join-Path $repo 'var\events.db'))
+    $dbs = @('C:\bots\data\memory.db', (Join-Path $repo 'var\events.db'), (Join-Path $repo 'data\ecosys.db'))
     foreach ($db in $dbs) {
       if (Test-Path $db) {
         Write-Log "Vacuuming $db"
@@ -192,6 +194,48 @@ except Exception as e:
       } else { Write-Log "DB not found: $db" }
     }
   } catch { Write-Log "Vacuum error: $($_.Exception.Message)" }
+}
+
+
+# 5c) Optional LoggerDB snapshot and runs index
+if ($RunSnapshot -or $RunIndex) {
+  try {
+    $pyExe = Join-Path $repo '.venv/Scripts/python.exe'
+    if (-not (Test-Path $pyExe)) {
+      try { $pyExe = (Get-Command python -ErrorAction SilentlyContinue | Select-Object -First 1).Source } catch {}
+      if (-not $pyExe) { $pyExe = 'python' }
+    }
+
+    if ($RunSnapshot) {
+      Write-Log "Running dev/loggerdb_cli.py snapshot-run"
+      & $pyExe (Join-Path $repo 'dev/loggerdb_cli.py') 'snapshot-run' '-n' '200' 2>&1 | Tee-Object -FilePath $logfile -Append | Out-Host
+    }
+    if ($RunIndex) {
+      Write-Log "Running dev/summarize_runs.py"
+      & $pyExe (Join-Path $repo 'dev/summarize_runs.py') 2>&1 | Tee-Object -FilePath $logfile -Append | Out-Host
+    }
+  } catch { Write-Log "Snapshot/Index error: $($_.Exception.Message)" }
+}
+
+
+# 5c) Optional LoggerDB snapshot and runs index
+if ($RunSnapshot -or $RunIndex) {
+  try {
+    $pyExe = Join-Path $repo '.venv/Scripts/python.exe'
+    if (-not (Test-Path $pyExe)) {
+      try { $pyExe = (Get-Command python -ErrorAction SilentlyContinue | Select-Object -First 1).Source } catch {}
+      if (-not $pyExe) { $pyExe = 'python' }
+    }
+
+    if ($RunSnapshot) {
+      Write-Log "Running dev/loggerdb_cli.py snapshot-run"
+      & $pyExe (Join-Path $repo 'dev/loggerdb_cli.py') 'snapshot-run' '-n' '200' 2>&1 | Tee-Object -FilePath $logfile -Append | Out-Host
+    }
+    if ($RunIndex) {
+      Write-Log "Running dev/summarize_runs.py"
+      & $pyExe (Join-Path $repo 'dev/summarize_runs.py') 2>&1 | Tee-Object -FilePath $logfile -Append | Out-Host
+    }
+  } catch { Write-Log "Snapshot/Index error: $($_.Exception.Message)" }
 }
 
 # 5b) Optional pytest run
