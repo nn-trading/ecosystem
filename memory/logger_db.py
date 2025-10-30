@@ -48,16 +48,7 @@ CREATE TABLE IF NOT EXISTS memories (
 -- FTS for retrieval (optional)
 CREATE VIRTUAL TABLE IF NOT EXISTS events_fts USING fts5(payload, type, agent, content='events', content_rowid='id');
 
-CREATE TRIGGER IF NOT EXISTS events_ai AFTER INSERT ON events BEGIN
-  INSERT INTO events_fts(rowid, payload, type, agent) VALUES (new.id, new.payload_json, new.type, new.agent);
-END;
-CREATE TRIGGER IF NOT EXISTS events_au AFTER UPDATE ON events BEGIN
-  INSERT INTO events_fts(events_fts, rowid, payload, type, agent) VALUES ('delete', old.id, old.payload_json, old.type, old.agent);
-  INSERT INTO events_fts(rowid, payload, type, agent) VALUES (new.id, new.payload_json, new.type, new.agent);
-END;
-CREATE TRIGGER IF NOT EXISTS events_ad AFTER DELETE ON events BEGIN
-  INSERT INTO events_fts(events_fts, rowid, payload, type, agent) VALUES ('delete', old.id, old.payload_json, old.type, old.agent);
-END;
+
 """
 
 class LoggerDB:
