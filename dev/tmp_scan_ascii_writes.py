@@ -1,8 +1,7 @@
 import os, re, sys
 root = r"C:\\bots\\ecosys"
-pat_w = re.compile(r"open\([^\)]*['\"]w['\"][^\)]*encoding=['\"]utf-?8['\"][^\)]*\)")
-pat_a = re.compile(r"open\([^\)]*['\"]a['\"][^\)]*encoding=['\"]utf-?8['\"][^\)]*\)")
-pat_wt = re.compile(r"write_text\([^\)]*encoding=['\"]utf-?8['\"][^\)]*\)")
+pat_w = re.compile(r"(?:io\.)?open\([^\)]*['\"](?:w|a)['\"][^\)]*encoding\s*=\s*['\"]utf-?8['\"][^\)]*\)")
+pat_wt = re.compile(r"write_text\([^\)]*encoding\s*=\s*['\"]utf-?8['\"][^\)]*\)")
 pat_json = re.compile(r"ensure_ascii\s*=\s*False")
 
 hits = []
