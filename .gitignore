@@ -1,4 +1,4 @@
-﻿# Logs and runtime artifacts
+# Logs and runtime artifacts
 workspace/logs/*.jsonl
 workspace/logs/*.jsonl.bak
 logs/*.log
@@ -37,3 +37,6 @@ workspace/eval_sandbox/
 # Windows reserved or stray files that break git on Windows
 CON
 -
+
+data/
+
