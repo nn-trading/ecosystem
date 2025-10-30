@@ -10,6 +10,15 @@ SESSION_PLAN = [
     {"id": "06-runbook-update", "title": "RUNBOOK.md updated and committed to reflect HEAD and test summary", "status": "done"},
     {"id": "07-asat-script", "title": "Commit dev\\run_asat.ps1 with header/usage", "status": "done"},
     {"id": "08-next-actions", "title": "Prioritize CORE-01 and CORE-03 after tasks-persist decision", "status": "in_progress"},
+    {"id": "ASCII-01-Verify", "title": "Verify ASCII-safe writers across repo and write paths", "status": "in_progress", "notes": "Var fix scripts converted"},
+    {"id": "RUNBOOK-CommitSync", "title": "RUNBOOK snapshot committed and working tree clean", "status": "done"},
+    {"id": "TT-01", "title": "Scan repo for utf-8 writes or unsafe JSON writers", "status": "in_progress", "notes": "Use dev/tmp_scan_ascii_writes.py; ignore .venv"},
+    {"id": "TT-02", "title": "Standardize ASCII-safe writers for remaining write sites", "status": "in_progress", "notes": "Converted var/fix_* scripts to ascii ignore"},
+    {"id": "TT-03", "title": "Run pytest for regression check", "status": "done", "notes": "30 passed, 1 skipped, 3 warnings"},
+    {"id": "TT-04", "title": "Persist current working-list tasks to logs/tasks.json", "status": "todo"},
+    {"id": "TT-05", "title": "Update RUNBOOK.md snapshot (Commit and Working tree)", "status": "done"},
+    {"id": "CORE-01-Design", "title": "Design for intent detection and replanning", "status": "todo"},
+    {"id": "CORE-03-Design", "title": "Design for logger/memory SQLite and summarizer", "status": "todo"},
 ]
 
 def read_json(path):
