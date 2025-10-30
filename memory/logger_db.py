@@ -101,6 +101,18 @@ END;
         with _DB_LOCK:
             try:
                 self.conn.executescript(sql)
+                # Backfill FTS if empty (handles legacy DBs with existing rows)
+                try:
+                    cur = self.conn.execute("SELECT 1 FROM events_fts LIMIT 1")
+                    has = cur.fetchone()
+                except Exception:
+                    has = True  # if querying FTS fails, skip backfill
+                if not has:
+                    t_sel = type_col if type_col else "NULL"
+                    a_sel = agent_col if agent_col else "NULL"
+                    self.conn.execute(
+                        f"INSERT INTO events_fts(rowid, payload, type, agent) SELECT id, payload_json, {t_sel}, {a_sel} FROM events"
+                    )
                 self.conn.commit()
             except Exception:
                 pass
