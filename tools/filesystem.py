@@ -24,7 +24,7 @@ def write(path: str, content: str) -> dict:
         content_to_write = "".join(lines)
     else:
         content_to_write = content
-    p.write_text(content_to_write, encoding="utf-8")
+    p.write_text(content_to_write, encoding='ascii', errors='ignore')
     return {"ok": True, "path": str(p), "bytes": len(content_to_write), "sanitized": changed}
 
 def ls(path: str) -> dict:

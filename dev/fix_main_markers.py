@@ -9,7 +9,7 @@ s = s.replace("from future import annotations", "from future import annotations"
 s = s.replace("os.path.abspath(file)", "os.path.abspath(file)")
 s = s.replace('if name == "main":', 'if name == "main":')
 
-open(p,"w",encoding="utf-8").write(s)
+open(p,"w",encoding="ascii",errors="ignore").write(s)
 
 # Verify
 t = open(p,"r",encoding="utf-8").read()

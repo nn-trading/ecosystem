@@ -2,6 +2,7 @@
 import json
 from pathlib import Path
 from agents.base_agent import BaseAgent
+from core.ascii_writer import write_text_ascii
 
 SKELETONS = {
     "agents/architect_agent.py": """import asyncio
@@ -55,7 +56,7 @@ class ForgeAgent(BaseAgent):
                         p = (root / rel).resolve()
                         p.parent.mkdir(parents=True, exist_ok=True)
                         if not p.exists():
-                            p.write_text(code, encoding="utf-8")
+                            write_text_ascii(str(p), code)
                             created.append(p.name)
                     msg = {"created": created, "dir": str((root / "agents").resolve())}
                     await self.bus.publish("comms/out", {"text": json.dumps(msg, indent=4)}, sender=self.name)

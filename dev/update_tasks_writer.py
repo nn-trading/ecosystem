@@ -9,7 +9,7 @@ SESSION_PLAN = [
     {"id": "05-tasks-persist", "title": "Adopt ASCII-only logs/tasks.json writer; stop sessions/TASKS.md writes", "status": "done", "notes": "Using Python ensure_ascii writer"},
     {"id": "06-runbook-update", "title": "RUNBOOK.md updated and committed to reflect HEAD and test summary", "status": "done"},
     {"id": "07-asat-script", "title": "Commit dev\\run_asat.ps1 with header/usage", "status": "done"},
-    {"id": "08-next-actions", "title": "Prioritize CORE-01 and CORE-03 after tasks-persist decision", "status": "todo"},
+    {"id": "08-next-actions", "title": "Prioritize CORE-01 and CORE-03 after tasks-persist decision", "status": "in_progress"},
 ]
 
 def read_json(path):
