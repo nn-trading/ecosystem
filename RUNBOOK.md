@@ -5,7 +5,7 @@ This file tracks session status and resume checkpoints. ASCII-only/UTF-8.
 ## Current status
 - Repo: C:\bots\ecosys
 - Branch: eval-battery-and-maintenance-fixes
-- Commit: d978a82
+- Commit: b422897
 - Tools: winui_pid LRESULT fallback in place; import OK (Python 3.12). SendMessageW.restype=c_longlong.
 - Tests: pytest 30 passed, 1 skipped (UI macro; gated by AGENT_DANGER_MODE), 3 warnings
 - Pip: restored via ensurepip; requirements installed
