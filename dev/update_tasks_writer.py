@@ -9,7 +9,7 @@ SESSION_PLAN = [
     {"id": "05-tasks-persist", "title": "Adopt ASCII-only logs/tasks.json writer; stop sessions/TASKS.md writes", "status": "done", "notes": "Using Python ensure_ascii writer"},
     {"id": "06-runbook-update", "title": "RUNBOOK.md updated and committed to reflect HEAD and test summary", "status": "done"},
     {"id": "07-asat-script", "title": "Commit dev\\run_asat.ps1 with header/usage", "status": "done"},
-    {"id": "08-next-actions", "title": "Prioritize CORE-01 and CORE-03 after tasks-persist decision", "status": "in_progress"},
+    {"id": "08-next-actions", "title": "Prioritize CORE-01 and CORE-03 after tasks-persist decision", "status": "done", "notes": "Priority set: 1) CORE-03 observability/logger+CLI, 2) CORE-01 intent+replan"},
     {"id": "ASCII-01-Verify", "title": "Verify ASCII-safe writers across repo and write paths", "status": "done", "notes": "Repo scan clean; var fix scripts converted"},
     {"id": "RUNBOOK-CommitSync", "title": "RUNBOOK snapshot committed and working tree clean", "status": "done"},
     {"id": "TT-01", "title": "Scan repo for utf-8 writes or unsafe JSON writers", "status": "done", "notes": ".venv ignored; scanner clean"},
