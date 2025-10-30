@@ -134,8 +134,11 @@ try:
     out_path = LOGS / 'repo_state.json'
     out_path.parent.mkdir(parents=True, exist_ok=True)
     gi = _git_info(REPO)
-    with open(out_path, 'w', encoding='utf-8') as f:
+    tmp = str(out_path) + '.tmp'
+    with open(tmp, 'w', encoding='ascii', errors='backslashreplace') as f:
         json.dump({'root': str(REPO), 'git': gi, **inv}, f, ensure_ascii=True)
+        f.write('\n')
+    os.replace(tmp, out_path)
     results.append({'check':'repo_state_written','path':str(out_path),'files':inv['summary']['files_total'], 'branch': gi.get('branch',''), 'commit': gi.get('commit',''), 'clean': gi.get('clean', True)})
 except Exception as e:
     results.append({'check':'repo_state_err','err':str(e)})
