@@ -170,7 +170,7 @@ class Memory:
         async with self._lock:
             tmp_fd, tmp_path = tempfile.mkstemp(prefix="events_", suffix=".jsonl", dir=self.log_dir)
             os.close(tmp_fd)
-            with open(tmp_path, "w", encoding="utf-8") as w:
+            with open(tmp_path, "w", encoding="ascii", errors="ignore") as w:
                 for ln in tail_lines:
                     w.write(ln if ln.endswith("\n") else ln + "\n")
             # atomic replace

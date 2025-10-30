@@ -624,7 +624,7 @@ def collect_tasks() -> List[Task]:
 
 
 def write_result(rec: Dict[str, Any]):
-    with open(RESULTS_PATH, 'a', encoding='utf-8') as f:
+    with open(RESULTS_PATH, 'a', encoding='ascii', errors='ignore') as f:
         f.write(json.dumps(rec, ensure_ascii=True) + '\n')
 
 

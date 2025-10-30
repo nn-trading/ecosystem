@@ -44,7 +44,7 @@ def main():
     # Write to temporary and atomically replace
     fd, tmp_path = tempfile.mkstemp(prefix='events_tail_', suffix='.jsonl', dir=log_dir)
     os.close(fd)
-    with open(tmp_path, 'w', encoding='utf-8') as w:
+    with open(tmp_path, 'w', encoding='ascii', errors='ignore') as w:
         for ln in tail_lines:
             w.write(ln if ln.endswith('\n') else ln + '\n')
 
