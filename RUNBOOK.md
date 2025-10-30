@@ -5,11 +5,11 @@ This file tracks session status and resume checkpoints. ASCII-only/UTF-8.
 ## Current status
 - Repo: C:\bots\ecosys
 - Branch: eval-battery-and-maintenance-fixes
-- Commit: f8e6ef0
+- Commit: 69273ad
 - Tools: winui_pid LRESULT fallback in place; import OK (Python 3.12). SendMessageW.restype=c_longlong.
 - Tests: pytest 30 passed, 1 skipped (UI macro; gated by AGENT_DANGER_MODE), 3 warnings
 - Pip: restored via ensurepip; requirements installed
-- Working tree: 1 modified (agents\\autofix_agent.py); otherwise clean
+- Working tree: clean
 
 ## Latest checks (2025-10-30)
 - ToolsRegistry: lists win.* and ui.* tools; registry OK
@@ -58,3 +58,4 @@ This file tracks session status and resume checkpoints. ASCII-only/UTF-8.
 ## Notes
 - TASKS.md is ignored by .gitignore; this runbook is tracked for status persistence.
 - Keep logs/session_status.txt as ASCII-only; it's ignored by git.
+
