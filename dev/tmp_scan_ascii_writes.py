@@ -6,6 +6,8 @@ pat_json = re.compile(r"ensure_ascii\s*=\s*False")
 
 hits = []
 for dp, dn, fn in os.walk(root):
+    if '.venv' in dp.split(os.sep):
+        continue
     for f in fn:
         if f.endswith('.py'):
             p = os.path.join(dp, f)
