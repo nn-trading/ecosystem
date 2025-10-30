@@ -60,6 +60,7 @@ from core.memory import Memory, DEFAULT_KEEP_LAST
 from core.assistant_loader import AssistantLoader
 from core.event_bridge import bridge_chat_to_bus, bridge_topics_to_bus
 from memory.eventlog import EventLog
+from memory.logger_db import get_logger_db
 
 # --- Agents ---
 from agents.comms_agent import CommsAgent
@@ -334,27 +335,26 @@ async def main():
     memory = Memory()
     tools = ToolsRegistry
 
+    # Initialize SQLite logger DB for tool events and artifacts
+    try:
+        _loggerdb = get_logger_db()
+    except Exception:
+        _loggerdb = None
+
     try:
         def _tools_trace(topic: str, payload: dict):
             try:
+                if _loggerdb is not None:
+                    try:
+                        _loggerdb.log_tool_event(topic, payload)
+                    except Exception:
+                        pass
                 loop = asyncio.get_running_loop()
                 loop.create_task(bus.publish(topic, payload, sender="ToolsRegistry"))
             except Exception:
                 pass
         if hasattr(tools, "set_tracer"):
             tools.set_tracer(_tools_trace)  # type: ignore[attr-defined]
-    except Exception:
-        pass
-
-    # Print ToolsRegistry at startup for visibility/debug
-    try:
-        avail = tools.available() if hasattr(tools, "available") else []
-        if isinstance(avail, list) and avail:
-            print("AI: ToolsRegistry:", ", ".join(avail))
-            try:
-                await bus.publish("ui/print", {"text": "[Main] Tools: " + ", ".join(avail)}, sender="Main")
-            except Exception:
-                pass
     except Exception:
         pass
 
