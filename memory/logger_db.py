@@ -5,10 +5,10 @@ from pathlib import Path
 from typing import Any, Dict, List, Optional, Tuple
 
 _DB_PATH = Path(
-	    os.environ.get("ECOSYS_LOGGER_DB")
-	    or os.environ.get("ECOSYS_MEMORY_DB")
-	    or (Path(__file__).resolve().parent.parent / "var" / "events.db")
-	)
+        os.environ.get("ECOSYS_LOGGER_DB")
+        or os.environ.get("ECOSYS_MEMORY_DB")
+        or (Path(__file__).resolve().parent.parent / "var" / "events.db")
+    )
 _DB_LOCK = threading.RLock()
 _RUN_TS: Optional[str] = None
 
@@ -70,6 +70,31 @@ class LoggerDB:
         self.conn = sqlite3.connect(str(self.path), check_same_thread=False)
         self.conn.executescript(SCHEMA)
         self.conn.commit()
+        self._ensure_schema_compat()
+
+    def _ensure_schema_compat(self) -> None:
+        cols = self._columns("events")
+        if "agent" not in cols:
+            try:
+                with _DB_LOCK:
+                    self.conn.execute("ALTER TABLE events ADD COLUMN agent TEXT")
+                    self.conn.commit()
+            except Exception:
+                pass
+        # Do not try to add 'type' automatically; older DBs may use 'topic'
+
+    def _columns(self, table: str) -> List[str]:
+        try:
+            cur = self.conn.execute(f"PRAGMA table_info({table})")
+            return [str(r[1]) for r in cur.fetchall()]
+        except Exception:
+            return []
+
+    def _event_colnames(self) -> Tuple[Optional[str], Optional[str]]:
+        cols = set(self._columns("events"))
+        type_col = 'type' if 'type' in cols else ('topic' if 'topic' in cols else None)
+        agent_col = 'agent' if 'agent' in cols else ('sender' if 'sender' in cols else None)
+        return type_col, agent_col
 
     def _json(self, data: Any) -> str:
         try:
@@ -89,7 +114,6 @@ class LoggerDB:
             self.conn.commit()
 
     def log_tool_event(self, topic: str, data: Dict[str, Any]) -> None:
-        # topic in {"tool/call","tool/result"}. Data contains tool name, args or result
         try:
             tool = str(data.get("tool", ""))
             payload = {**data}
@@ -135,16 +159,13 @@ class LoggerDB:
             return None
 
     def _maybe_capture_artifact(self, tool: str, payload: Dict[str, Any]) -> None:
-        # Try to persist common textual outputs
         res = payload.get("result") if isinstance(payload, dict) else None
         if isinstance(res, dict):
-            # File path output
             path = res.get("path")
             if isinstance(path, str) and os.path.exists(path):
                 sha = self._sha256_file(Path(path))
                 meta = {"tool": tool}
                 self.add_artifact(Path(path), sha256=sha, meta=meta)
-            # stdout/text outputs
             txt = None
             for k in ("stdout", "text", "content"):
                 v = res.get(k)
@@ -174,7 +195,6 @@ class LoggerDB:
             self.conn.commit()
 
     def add_memory(self, text: str) -> None:
-        # Store as-is (may contain Unicode). SQLite can handle it; file artifacts remain ASCII-safe
         with _DB_LOCK:
             self.conn.execute(
                 "INSERT INTO memories(ts, text) VALUES (?,?)",
@@ -182,31 +202,140 @@ class LoggerDB:
             )
             self.conn.commit()
 
+    def stats(self) -> Dict[str, Any]:
+        with _DB_LOCK:
+            try:
+                total, min_id, max_id = self.conn.execute(
+                    "SELECT COUNT(*), MIN(id), MAX(id) FROM events"
+                ).fetchone()
+            except Exception:
+                total, min_id, max_id = 0, None, None
+            def _count(tbl: str) -> int:
+                try:
+                    return int(self.conn.execute(f"SELECT COUNT(*) FROM {tbl}").fetchone()[0])
+                except Exception:
+                    return 0
+            artifacts = _count("artifacts")
+            skills = _count("skills")
+            memories = _count("memories")
+            fts = True
+            try:
+                self.conn.execute("SELECT rowid FROM events_fts LIMIT 0")
+            except Exception:
+                fts = False
+            return {
+                "events": int(total or 0),
+                "min_id": min_id,
+                "max_id": max_id,
+                "artifacts": artifacts,
+                "skills": skills,
+                "memories": memories,
+                "fts": fts,
+            }
+
+    def recent_events(self, n: int = 200) -> List[Dict[str, Any]]:
+        type_col, agent_col = self._event_colnames()
+        sel_parts = ["id", "ts"]
+        if agent_col:
+            sel_parts.append(agent_col + " AS agent")
+        else:
+            sel_parts.append("NULL AS agent")
+        if type_col:
+            sel_parts.append(type_col + " AS type")
+        else:
+            sel_parts.append("NULL AS type")
+        sel_parts.append("payload_json")
+        sql = f"SELECT {', '.join(sel_parts)} FROM events ORDER BY id DESC LIMIT ?"
+        cur = self.conn.execute(sql, (int(n),))
+        rows = cur.fetchall()
+        out: List[Dict[str, Any]] = []
+        for (eid, ts, agent, type_, pj) in reversed(rows):
+            try:
+                payload = json.loads(pj) if pj else {}
+            except Exception:
+                payload = {"_raw": pj}
+            out.append({"id": eid, "ts": ts, "agent": agent, "type": type_, "payload": payload})
+        return out
+
+    def recent_artifacts(self, n: int = 200) -> List[Dict[str, Any]]:
+        cur = self.conn.execute(
+            "SELECT id, ts, path, sha256, meta_json FROM artifacts ORDER BY id DESC LIMIT ?",
+            (int(n),),
+        )
+        rows = cur.fetchall()
+        out: List[Dict[str, Any]] = []
+        for (aid, ts, path, sha, mj) in reversed(rows):
+            try:
+                meta = json.loads(mj) if mj else {}
+            except Exception:
+                meta = {"_raw": mj}
+            out.append({"id": aid, "ts": ts, "path": path, "sha256": sha, "meta": meta})
+        return out
+
+    def top_event_types(self, limit: int = 10) -> List[Tuple[str, int]]:
+        type_col, _ = self._event_colnames()
+        if not type_col:
+            return []
+        cur = self.conn.execute(
+            f"SELECT {type_col} AS type, COUNT(*) AS c FROM events WHERE {type_col} IS NOT NULL GROUP BY {type_col} ORDER BY c DESC LIMIT ?",
+            (int(limit),),
+        )
+        return [(r[0], int(r[1])) for r in cur.fetchall()]
+
     def retrieve(self, query: str, k: int = 5) -> List[Dict[str, Any]]:
         if not query:
             return []
+        type_col, agent_col = self._event_colnames()
+        # Try FTS on payload first, join by rowid
+        rows: List[tuple] = []
         try:
+            sel_parts = ["e.ts"]
+            if agent_col:
+                sel_parts.append(f"e.{agent_col} AS agent")
+            else:
+                sel_parts.append("NULL AS agent")
+            if type_col:
+                sel_parts.append(f"e.{type_col} AS type")
+            else:
+                sel_parts.append("NULL AS type")
+            sel_parts.append("e.payload_json")
             sql = (
-                "SELECT e.ts, e.agent, e.type, e.payload_json FROM events e "
+                f"SELECT {', '.join(sel_parts)} FROM events e "
                 "JOIN events_fts f ON e.id=f.rowid WHERE f.payload MATCH ? ORDER BY e.id DESC LIMIT ?"
             )
-            args = (query, int(k))
-            cur = self.conn.execute(sql, args)
+            cur = self.conn.execute(sql, (query, int(k)))
+            rows = cur.fetchall()
         except Exception:
             like = f"%{query}%"
-            cur = self.conn.execute(
-                "SELECT ts, agent, type, payload_json FROM events WHERE (payload_json LIKE ? OR type LIKE ? OR agent LIKE ?) ORDER BY id DESC LIMIT ?",
-                (like, like, like, int(k)),
-            )
+            where_bits = ["payload_json LIKE ?"]
+            params: List[Any] = [like]
+            if type_col:
+                where_bits.append(f"{type_col} LIKE ?")
+                params.append(like)
+            if agent_col:
+                where_bits.append(f"{agent_col} LIKE ?")
+                params.append(like)
+            sel_parts = ["ts"]
+            if agent_col:
+                sel_parts.append(f"{agent_col} AS agent")
+            else:
+                sel_parts.append("NULL AS agent")
+            if type_col:
+                sel_parts.append(f"{type_col} AS type")
+            else:
+                sel_parts.append("NULL AS type")
+            sel_parts.append("payload_json")
+            sql = f"SELECT {', '.join(sel_parts)} FROM events WHERE (" + " OR ".join(where_bits) + ") ORDER BY id DESC LIMIT ?"
+            params.append(int(k))
+            cur = self.conn.execute(sql, tuple(params))
+            rows = cur.fetchall()
         out: List[Dict[str, Any]] = []
-        rows = cur.fetchall()
         for (ts, agent, type_, pj) in rows:
             snippet = ""
             try:
                 d = json.loads(pj) if pj else {}
                 if isinstance(d, dict):
-                    # prefer short summary
-                    for key in ("text","stdout","error","message"):
+                    for key in ("text", "stdout", "error", "message"):
                         if key in d and isinstance(d[key], str):
                             snippet = d[key][:400]
                             break
@@ -217,7 +346,7 @@ class LoggerDB:
             except Exception:
                 snippet = (pj or "")[:400]
             out.append({"ts": ts, "agent": agent, "type": type_, "snippet": snippet})
-        out.reverse()  # return chronological
+        out.reverse()
         return out
 
 _singleton: Optional[LoggerDB] = None
