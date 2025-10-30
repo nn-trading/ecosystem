@@ -15,8 +15,11 @@ def _load_aliases():
 
 def _save_aliases(d):
     os.makedirs(os.path.dirname(ALIASES_PATH), exist_ok=True)
-    with open(ALIASES_PATH, "w", encoding="utf-8") as f:
-        json.dump(d, f, indent=2)
+    tmp = ALIASES_PATH + ".tmp"
+    with open(tmp, "w", encoding="ascii", errors="backslashreplace") as f:
+        json.dump(d, f, ensure_ascii=True, indent=2)
+        f.write("\n")
+    os.replace(tmp, ALIASES_PATH)
 
 class AutofixAgent(BaseAgent):
     """

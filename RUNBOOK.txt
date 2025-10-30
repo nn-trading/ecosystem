@@ -42,8 +42,9 @@ Notes
   - Authoritative: logs\tasks.json
   - Do not rely on external sessions\<id>\TASKS.md (may fail on Windows codepages)
 - Memory DB:
-  - Canonical path: C:\bots\assistant\memory.db (configured in assistant\config.json)
-  - Do not migrate to var\events.db unless explicitly instructed; if needed later, update config and migrate data
+  - Default path: var\events.db (used by memory\eventlog.py). You can override via ECOSYS_MEMORY_DB.
+  - To override, set ECOSYS_MEMORY_DB to an absolute path before start scripts.
+  - The previous assistant\memory.db reference is outdated.
 - To run indefinitely as a service, pass 0 for STOP_AFTER_SEC (it will wait forever):
     powershell -NoProfile -File dev\start_headless.ps1 -STOP_AFTER_SEC 0 -HEARTBEAT_SEC 5 -HEALTH_SEC 60
 - Smoke tests:

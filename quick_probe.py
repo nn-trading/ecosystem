@@ -1,5 +1,5 @@
 # C:\bots\ecosys\quick_probe.py
-import os, sys, json, glob, sqlite3, time, hashlib
+import os, sys, json, glob, sqlite3, time, hashlib, subprocess
 from pathlib import Path
 
 REPO = Path(__file__).resolve().parent
@@ -114,13 +114,29 @@ def _inventory_repo(root: Path) -> dict:
     }
     return {'summary': summary, 'files': files_list}
 
+
+# Git info (branch/commit/clean)
+def _git_info(root: Path) -> dict:
+    info = {"branch": "", "commit": "", "clean": True}
+    try:
+        def run(args: list[str]) -> str:
+            return subprocess.check_output(args, cwd=str(root), stderr=subprocess.DEVNULL).decode("ascii", "ignore").strip()
+        commit = run(["git", "rev-parse", "--short", "HEAD"]) or ""
+        branch = run(["git", "branch", "--show-current"]) or ""
+        status = run(["git", "status", "--porcelain=v1"]) or ""
+        info["branch"], info["commit"], info["clean"] = branch, commit, (status == "")
+    except Exception:
+        pass
+    return info
+
 try:
     inv = _inventory_repo(REPO)
     out_path = LOGS / 'repo_state.json'
     out_path.parent.mkdir(parents=True, exist_ok=True)
+    gi = _git_info(REPO)
     with open(out_path, 'w', encoding='utf-8') as f:
-        json.dump({'root': str(REPO), **inv}, f, ensure_ascii=True)
-    results.append({'check':'repo_state_written','path':str(out_path),'files':inv['summary']['files_total']})
+        json.dump({'root': str(REPO), 'git': gi, **inv}, f, ensure_ascii=True)
+    results.append({'check':'repo_state_written','path':str(out_path),'files':inv['summary']['files_total'], 'branch': gi.get('branch',''), 'commit': gi.get('commit',''), 'clean': gi.get('clean', True)})
 except Exception as e:
     results.append({'check':'repo_state_err','err':str(e)})
 

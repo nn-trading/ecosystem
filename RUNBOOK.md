@@ -5,13 +5,13 @@ This file tracks session status and resume checkpoints. ASCII-only/UTF-8.
 ## Current status
 - Repo: C:\bots\ecosys
 - Branch: eval-battery-and-maintenance-fixes
-- Commit: fb8808a
+- Commit: f8e6ef0
 - Tools: winui_pid LRESULT fallback in place; import OK (Python 3.12). SendMessageW.restype=c_longlong.
 - Tests: pytest 30 passed, 1 skipped (UI macro; gated by AGENT_DANGER_MODE), 3 warnings
 - Pip: restored via ensurepip; requirements installed
-- Working tree: 1 untracked (dev\\run_asat.ps1); stray CON removed
+- Working tree: 1 modified (agents\\autofix_agent.py); otherwise clean
 
-## Latest checks (2025-10-28)
+## Latest checks (2025-10-30)
 - ToolsRegistry: lists win.* and ui.* tools; registry OK
 - winui_pid: Python 3.12.10 import OK; SendMessageW.restype is ctypes.c_longlong; no import errors
 - Eval battery: 154 tasks enumerated; clean run produced 148 pass, 6 fail previously; current ASAT below
