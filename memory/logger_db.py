@@ -4,7 +4,11 @@ import os, json, sqlite3, time, threading, hashlib
 from pathlib import Path
 from typing import Any, Dict, List, Optional, Tuple
 
-_DB_PATH = Path(os.environ.get("ECOSYS_LOGGER_DB" ) or (Path(__file__).resolve().parent.parent / "data" / "ecosys.db"))
+_DB_PATH = Path(
+	    os.environ.get("ECOSYS_LOGGER_DB")
+	    or os.environ.get("ECOSYS_MEMORY_DB")
+	    or (Path(__file__).resolve().parent.parent / "var" / "events.db")
+	)
 _DB_LOCK = threading.RLock()
 _RUN_TS: Optional[str] = None
 
