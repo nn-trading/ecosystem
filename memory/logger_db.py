@@ -71,6 +71,7 @@ class LoggerDB:
         self.conn.executescript(SCHEMA)
         self.conn.commit()
         self._ensure_schema_compat()
+        self._ensure_fts_triggers_compat()
 
     def _ensure_schema_compat(self) -> None:
         cols = self._columns("events")
@@ -82,6 +83,37 @@ class LoggerDB:
             except Exception:
                 pass
         # Do not try to add 'type' automatically; older DBs may use 'topic'
+
+
+    def _ensure_fts_triggers_compat(self) -> None:
+        type_col, agent_col = self._event_colnames()
+        t_new = f"new.{type_col}" if type_col else "NULL"
+        a_new = f"new.{agent_col}" if agent_col else "NULL"
+        t_old = f"old.{type_col}" if type_col else "NULL"
+        a_old = f"old.{agent_col}" if agent_col else "NULL"
+        sql = f"""
+CREATE VIRTUAL TABLE IF NOT EXISTS events_fts USING fts5(payload, type, agent, content='events', content_rowid='id');
+DROP TRIGGER IF EXISTS events_ai;
+CREATE TRIGGER events_ai AFTER INSERT ON events BEGIN
+  INSERT INTO events_fts(rowid, payload, type, agent) VALUES (new.id, new.payload_json, {t_new}, {a_new});
+END;
+DROP TRIGGER IF EXISTS events_au;
+CREATE TRIGGER events_au AFTER UPDATE ON events BEGIN
+  INSERT INTO events_fts(events_fts, rowid, payload, type, agent) VALUES ('delete', old.id, old.payload_json, {t_old}, {a_old});
+  INSERT INTO events_fts(rowid, payload, type, agent) VALUES (new.id, new.payload_json, {t_new}, {a_new});
+END;
+DROP TRIGGER IF EXISTS events_ad;
+CREATE TRIGGER events_ad AFTER DELETE ON events BEGIN
+  INSERT INTO events_fts(events_fts, rowid, payload, type, agent) VALUES ('delete', old.id, old.payload_json, {t_old}, {a_old});
+END;
+"""
+        with _DB_LOCK:
+            try:
+                self.conn.executescript(sql)
+                self.conn.commit()
+            except Exception:
+                pass
+
 
     def _columns(self, table: str) -> List[str]:
         try:
@@ -106,11 +138,22 @@ class LoggerDB:
                 return "{}"
 
     def append_event(self, agent: Optional[str], type_: str, payload: Optional[Dict[str, Any]] = None) -> None:
+        cols = set(self._columns("events"))
+        names: List[str] = ["ts"]
+        vals: List[Any] = [time.time()]
+        if "agent" in cols:
+            names.append("agent"); vals.append(agent)
+        elif "sender" in cols:
+            names.append("sender"); vals.append(agent)
+        if "type" in cols:
+            names.append("type"); vals.append(type_)
+        elif "topic" in cols:
+            names.append("topic"); vals.append(type_)
+        names.append("payload_json"); vals.append(self._json(payload or {}))
+        q = ",".join(["?" for _ in names])
+        sql = f"INSERT INTO events({', '.join(names)}) VALUES ({q})"
         with _DB_LOCK:
-            self.conn.execute(
-                "INSERT INTO events(ts, agent, type, payload_json) VALUES (?,?,?,?)",
-                (time.time(), agent, type_, self._json(payload or {})),
-            )
+            self.conn.execute(sql, tuple(vals))
             self.conn.commit()
 
     def log_tool_event(self, topic: str, data: Dict[str, Any]) -> None:
