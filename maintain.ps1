@@ -218,26 +218,6 @@ if ($RunSnapshot -or $RunIndex) {
 }
 
 
-# 5c) Optional LoggerDB snapshot and runs index
-if ($RunSnapshot -or $RunIndex) {
-  try {
-    $pyExe = Join-Path $repo '.venv/Scripts/python.exe'
-    if (-not (Test-Path $pyExe)) {
-      try { $pyExe = (Get-Command python -ErrorAction SilentlyContinue | Select-Object -First 1).Source } catch {}
-      if (-not $pyExe) { $pyExe = 'python' }
-    }
-
-    if ($RunSnapshot) {
-      Write-Log "Running dev/loggerdb_cli.py snapshot-run"
-      & $pyExe (Join-Path $repo 'dev/loggerdb_cli.py') 'snapshot-run' '-n' '200' 2>&1 | Tee-Object -FilePath $logfile -Append | Out-Host
-    }
-    if ($RunIndex) {
-      Write-Log "Running dev/summarize_runs.py"
-      & $pyExe (Join-Path $repo 'dev/summarize_runs.py') 2>&1 | Tee-Object -FilePath $logfile -Append | Out-Host
-    }
-  } catch { Write-Log "Snapshot/Index error: $($_.Exception.Message)" }
-}
-
 # 5b) Optional pytest run
 if ($RunPytest) {
   try {
