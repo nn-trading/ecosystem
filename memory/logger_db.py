@@ -52,7 +52,7 @@ CREATE VIRTUAL TABLE IF NOT EXISTS events_fts USING fts5(payload, type, agent, c
 """
 
 class LoggerDB:
-    def __init__(self, db_path: Optional[Path] = None) -> None:
+    def __init__(self, db_path: Optional[Path] = None, allow_mirror: bool = True) -> None:
         self.path = Path(db_path) if db_path else _DB_PATH
         try:
             self.path.parent.mkdir(parents=True, exist_ok=True)
@@ -63,6 +63,19 @@ class LoggerDB:
         self.conn.commit()
         self._ensure_schema_compat()
         self._ensure_fts_triggers_compat()
+        # Optional mirror DB for dual-write observability (no wipe)
+        self._mirror: Optional[LoggerDB] = None  # type: ignore[name-defined]
+        try:
+            if db_path is None and allow_mirror and not os.environ.get("ECOSYS_DISABLE_MIRROR"):
+                repo = Path(__file__).resolve().parent.parent
+                mirror_path = repo / "data" / "ecosys.db"
+                if mirror_path != self.path:
+                    # Ensure parent exists and initialize without further mirroring
+                    mirror_path.parent.mkdir(parents=True, exist_ok=True)
+                    self._mirror = LoggerDB(mirror_path, allow_mirror=False)
+        except Exception:
+            # Never fail construction due to mirror problems
+            self._mirror = None
 
     def _ensure_schema_compat(self) -> None:
         cols = self._columns("events")
@@ -158,6 +171,13 @@ END;
         with _DB_LOCK:
             self.conn.execute(sql, tuple(vals))
             self.conn.commit()
+        # Mirror write
+        try:
+            if getattr(self, "_mirror", None):
+                # Use mirror's append_event to preserve its own schema/triggers
+                self._mirror.append_event(agent, type_, payload)
+        except Exception:
+            pass
 
     def log_tool_event(self, topic: str, data: Dict[str, Any]) -> None:
         try:
