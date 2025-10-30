@@ -200,29 +200,62 @@ class EventLog:
 
     def search(self, query: str, limit: int = 100) -> List[Dict[str, Any]]:
         out: List[Dict[str, Any]] = []
+        records: List[tuple] = []
+        # Prefer FTS when available, but be robust to syntax errors and special characters
         if self.fts_ready:
-            sql = """
-            SELECT e.id, e.ts, e.topic, e.sender, e.payload_json
-            FROM events e
-            JOIN events_fts f ON e.id = f.rowid
-            WHERE f.payload MATCH ?
-            ORDER BY e.id DESC
-            LIMIT ?
-            """
-            args = (query, limit)
+            fts_sql = (
+                """
+                SELECT e.id, e.ts, e.topic, e.sender, e.payload_json
+                FROM events e
+                JOIN events_fts f ON e.id = f.rowid
+                WHERE f.payload MATCH ?
+                ORDER BY e.id DESC
+                LIMIT ?
+                """
+            )
+            like_sql = (
+                """
+                SELECT id, ts, topic, sender, payload_json
+                FROM events
+                WHERE (payload_json LIKE ? OR topic LIKE ?)
+                ORDER BY id DESC
+                LIMIT ?
+                """
+            )
+            try:
+                cur = self.conn.execute(fts_sql, (query, limit))
+                records = cur.fetchall()
+            except Exception:
+                # Retry by quoting the term for FTS. If that still fails, fall back to LIKE.
+                try:
+                    q = '"' + str(query).replace('"', '""') + '"'
+                    cur = self.conn.execute(fts_sql, (q, limit))
+                    records = cur.fetchall()
+                except Exception:
+                    like = f"%{query}%"
+                    cur = self.conn.execute(like_sql, (like, like, limit))
+                    records = cur.fetchall()
+            # If FTS succeeded but returned nothing and the query looks like a topic or contains specials,
+            # try a LIKE search that also matches topic
+            if not records and ("/" in str(query) or ":" in str(query) or " " in str(query)):
+                like = f"%{query}%"
+                cur = self.conn.execute(like_sql, (like, like, limit))
+                records = cur.fetchall()
         else:
-            sql = """
-            SELECT id, ts, topic, sender, payload_json
-            FROM events
-            WHERE (payload_json LIKE ? OR topic LIKE ?)
-            ORDER BY id DESC
-            LIMIT ?
-            """
+            like_sql = (
+                """
+                SELECT id, ts, topic, sender, payload_json
+                FROM events
+                WHERE (payload_json LIKE ? OR topic LIKE ?)
+                ORDER BY id DESC
+                LIMIT ?
+                """
+            )
             like = f"%{query}%"
-            args = (like, like, limit)
+            cur = self.conn.execute(like_sql, (like, like, limit))
+            records = cur.fetchall()
 
-        cur = self.conn.execute(sql, args)
-        for (eid, ts, topic, sender, pj) in cur.fetchall():
+        for (eid, ts, topic, sender, pj) in records:
             try:
                 payload = json.loads(pj) if pj else {}
             except Exception:

@@ -74,7 +74,7 @@ Write-Log "[BEGIN] repo=$repo"
 # 1) Stop any background processes launched by start.ps1
 try {
   Write-Log "Stopping background processes via start.ps1 -Stop"
-  & (Join-Path $repo 'start.ps1') -Stop | Tee-Object -FilePath $logfile -Append | Out-Host
+  & (Join-Path $repo 'start.ps1') -Stop 1 | Tee-Object -FilePath $logfile -Append | Out-Host
 } catch { Write-Log "start.ps1 -Stop threw: $($_.Exception.Message)" }
 
 # Also kill stray python processes that point to this repo's main.py
@@ -255,7 +255,7 @@ if ($RunPytest) {
 if ($Restart) {
   try {
     Write-Log "Starting environment headless/background"
-    & (Join-Path $repo 'start.ps1') -Headless -Background -EnsureDeps:$EnsureDeps | Tee-Object -FilePath $logfile -Append | Out-Host
+    & (Join-Path $repo 'start.ps1') -Headless 1 -Background 1 -EnsureDeps $([int][bool]$EnsureDeps) | Tee-Object -FilePath $logfile -Append | Out-Host
     Start-Sleep -Seconds 5
     $stdout = Join-Path $logs 'start_stdout.log'
     if (Test-Path $stdout) {

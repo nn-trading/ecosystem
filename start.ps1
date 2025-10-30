@@ -1,19 +1,37 @@
 ﻿param(
-  [switch]$Headless = $true,
+  [string]$Headless = '1',
   [int]$StopAfterSec = 0,
   [int]$HeartbeatSec = 5,
   [int]$HealthSec = 60,
   [int]$ResummarizeSec = 300,
   [int]$MemRotateSec = 60,
-  [switch]$EnsureVenv = $true,
-  [switch]$EnsureDeps = $true,
-  [switch]$Background = $true,
+  [string]$EnsureVenv = '1',
+  [string]$EnsureDeps = '0',
+  [string]$Background = '1',
   [string]$PythonExe = "",
-  [switch]$Stop = $false
+  [string]$Stop = '0',
+  [string]$RunPytest = '0'
 )
 $ErrorActionPreference = 'Stop'
 $repo = $PSScriptRoot
 Set-Location $repo
+
+function To-Bool([Object]$x) {
+  if ($x -is [bool]) { return $x }
+  if ($x -is [System.Management.Automation.SwitchParameter]) { return [bool]$x }
+  $s = [string]$x
+  if (-not $s) { return $false }
+  $s = $s.Trim().ToLower()
+  return ($s -eq '1' -or $s -eq 'true' -or $s -eq 'yes' -or $s -eq 'on')
+}
+
+$HeadlessB = To-Bool $Headless
+$EnsureVenvB = To-Bool $EnsureVenv
+$EnsureDepsB = To-Bool $EnsureDeps
+$BackgroundB = To-Bool $Background
+$StopB = To-Bool $Stop
+$RunPytestB = To-Bool $RunPytest
+
 
 # Logs
 $logs = Join-Path $repo 'logs'
@@ -23,7 +41,7 @@ $stderr = Join-Path $logs 'start_stderr.log'
 $pidFile = Join-Path $logs 'ecosys_pid.txt'
 
 # Optional stop helper
-if ($Stop) {
+if ($StopB) {
   $stopped = @()
   $headlessPidFile = Join-Path $logs 'headless_pid.txt'
   if (Test-Path $headlessPidFile) {
@@ -75,21 +93,21 @@ function Ensure-Deps([string]$py) {
 }
 
 # Prepare Python
-$pyExe = if ($EnsureVenv) { Ensure-Venv } else { Find-Python -preferred $PythonExe }
-if ($EnsureDeps) { Ensure-Deps -py $pyExe }
+$pyExe = if ($EnsureVenvB) { Ensure-Venv } else { Find-Python -preferred $PythonExe }
+if ($EnsureDepsB) { Ensure-Deps -py $pyExe }
 
 
-# Pre-start maintenance: purge logs, vacuum DBs, run pytest
+# Pre-start maintenance: purge logs, vacuum DBs, optionally run pytest
 try {
-  Write-Host "[start] Running pre-start maintenance (purge logs, vacuum, pytest)..."
-  & (Join-Path $repo 'maintain.ps1') -PurgeLogs -VacuumDbs -Restart:$false -EnsureDeps:$EnsureDeps -RunPytest:$true | Out-Host
+  Write-Host "[start] Running pre-start maintenance (purge logs, vacuum, pytest:$RunPytest)..."
+  & (Join-Path $repo 'maintain.ps1') -PurgeLogs -VacuumDbs -Restart:$false -EnsureDeps:$EnsureDepsB -RunPytest:$RunPytestB | Out-Host
 } catch { Write-Host "[start] Pre-start maintenance error: $($_.Exception.Message)" }
 
 # Build command line with per-process environment via cmd /c
 # Resolve a unified SQLite EventLog path for all agents/tools
 $eventsDb = Join-Path (Join-Path $repo 'var') 'events.db'
 $envParts = @(
-  'set ECOSYS_HEADLESS=' + ($(if ($Headless) { '1' } else { '0' })),
+  'set ECOSYS_HEADLESS=' + ($(if ($HeadlessB) { '1' } else { '0' })),
   'set STOP_AFTER_SEC=' + $StopAfterSec,
   'set HEARTBEAT_SEC=' + $HeartbeatSec,
   'set HEALTH_SEC=' + $HealthSec,
@@ -112,9 +130,9 @@ $cmdArgs = "/c $joinedEnv && `"$pyExe`" `"$repo\\main.py`" 1>> `"$stdout`" 2>> `
 
 Write-Host "[start] Repo: $repo"
 Write-Host "[start] Python: $pyExe"
-Write-Host "[start] Headless: $Headless StopAfterSec: $StopAfterSec"
+Write-Host "[start] Headless: $HeadlessB StopAfterSec: $StopAfterSec"
 
-if ($Background) {
+if ($BackgroundB) {
   $p = Start-Process -FilePath 'cmd.exe' -ArgumentList $cmdArgs -WorkingDirectory $repo -WindowStyle Hidden -PassThru
   $childPid = $p.Id
   Set-Content -Path $pidFile -Value $childPid
