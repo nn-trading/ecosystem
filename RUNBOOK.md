@@ -4,9 +4,9 @@ This file tracks session status and resume checkpoints. ASCII-only/UTF-8.
 
 ## Current status
 - Repo: C:\bots\ecosys
-- Branch: eval-battery-and-maintenance-fixes
-- Commit: b422897
-- Tools: winui_pid LRESULT fallback in place; import OK (Python 3.12). SendMessageW.restype=c_longlong.
+- Branch: feature/loggerdb-cli
+- Commit: 4e400f1
+- Tools: LoggerDB CLI ready (dev\loggerdb_cli.py). FTS triggers are legacy-compatible; LIKE fallback preserved.
 - Tests: pytest 30 passed, 1 skipped (UI macro; gated by AGENT_DANGER_MODE), 3 warnings
 - Pip: restored via ensurepip; requirements installed
 - Working tree: clean
@@ -46,14 +46,15 @@ This file tracks session status and resume checkpoints. ASCII-only/UTF-8.
 
 
 ## ASAT (Acceptance Suite Audit)
-- Last run: 2025-10-28 20:34:46 UTC
-- Output directory: C:\bots\ecosys\runs\20251028_203446
-- Commit: 27382c20e77684e02a33553a63f629669d0a0003
+- Last run: 2025-10-30 11:20:53 UTC
+- Output directory: C:\bots\ecosys\runs\20251030_112053
+- Commit: 4e400f1
 - Artifacts:
-  - report: C:\bots\ecosys\runs\20251028_203446\report.txt
-  - results: C:\bots\ecosys\runs\20251028_203446\results.jsonl
-  - summary: C:\bots\ecosys\runs\20251028_203446\summary.json
-- Notes: Artifacts are ASCII-only. Eval battery used tools/eval_runner; 154 tasks enumerated.
+  - summary: C:\bots\ecosys\runs\20251030_112053\summary.txt
+  - stats: C:\bots\ecosys\runs\20251030_112053\stats.json
+  - events: C:\bots\ecosys\runs\20251030_112053\recent_events.json
+  - top types: C:\bots\ecosys\runs\20251030_112053\top_event_types.json
+- Notes: LoggerDB CLI snapshot-run verified; FTS works when available with LIKE fallback on legacy schemas. Artifacts are ASCII-only.
 
 ## Notes
 - TASKS.md is ignored by .gitignore; this runbook is tracked for status persistence.
