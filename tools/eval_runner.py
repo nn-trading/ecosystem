@@ -197,7 +197,7 @@ def gen_file_tasks(prefix: str='FILE') -> List[Task]:
         content = f'line1-{i}\nline2-{i}\n'
         def mk(p=p, content=content, i=i):
             def fn():
-                with open(p, 'w', encoding='utf-8') as f:
+                with open(p, 'w', encoding='ascii', errors='ignore') as f:
                     f.write(content)
                 with open(p, 'r', encoding='utf-8') as f:
                     rd = f.read()
@@ -282,7 +282,7 @@ def gen_csv_tasks(prefix: str='CSV') -> List[Task]:
 
     def write_csv():
         def fn():
-            with open(path, 'w', newline='', encoding='utf-8') as f:
+            with open(path, 'w', newline='', encoding='ascii', errors='ignore') as f:
                 w = csv.writer(f)
                 w.writerow(['n','sq','mod3'])
                 w.writerows(rows)
