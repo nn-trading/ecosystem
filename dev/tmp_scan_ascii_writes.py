@@ -13,9 +13,9 @@ for dp, dn, fn in os.walk(root):
                 s = open(p, 'r', encoding='utf-8', errors='ignore').read()
             except Exception:
                 continue
-            if pat_w.search(s) or pat_a.search(s) or pat_wt.search(s) or pat_json.search(s):
+            if pat_w.search(s) or pat_wt.search(s) or pat_json.search(s):
                 for ln, line in enumerate(s.splitlines(), 1):
-                    if (pat_w.search(line) or pat_a.search(line) or pat_wt.search(line) or pat_json.search(line)):
+                    if (pat_w.search(line) or pat_wt.search(line) or pat_json.search(line)):
                         hits.append(f"{p}|{ln}|{line.strip()}")
 
 sys.stdout.write("\n".join(hits))
