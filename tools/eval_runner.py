@@ -431,7 +431,7 @@ def gen_hash_zip_tasks(prefix: str='HZ') -> List[Task]:
     base = os.path.join(SANDBOX, 'hz')
     os.makedirs(base, exist_ok=True)
     src = os.path.join(base, 'data.txt')
-    with open(src, 'w', encoding='utf-8') as f:
+    with open(src, 'w', encoding='ascii', errors='ignore') as f:
         f.write('hello world' * 100)
 
     def sha256_task():
