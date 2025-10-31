@@ -45,6 +45,15 @@ CREATE TABLE IF NOT EXISTS memories (
   text TEXT
 );
 
+CREATE TABLE IF NOT EXISTS tools (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  ts REAL NOT NULL,
+  name TEXT NOT NULL,
+  version TEXT,
+  provider TEXT,
+  meta_json TEXT
+);
+
 -- FTS for retrieval (optional)
 CREATE VIRTUAL TABLE IF NOT EXISTS events_fts USING fts5(payload, type, agent, content='events', content_rowid='id');
 
@@ -299,6 +308,7 @@ END;
             artifacts = _count("artifacts")
             skills = _count("skills")
             memories = _count("memories")
+            tools = _count("tools")
             fts = True
             try:
                 self.conn.execute("SELECT rowid FROM events_fts LIMIT 0")
@@ -311,8 +321,23 @@ END;
                 "artifacts": artifacts,
                 "skills": skills,
                 "memories": memories,
+                "tools": tools,
                 "fts": fts,
             }
+
+    def add_tool(self, name: str, version: Optional[str] = None, provider: Optional[str] = None, meta: Optional[Dict[str, Any]] = None) -> None:
+        meta_json = self._json(meta or {})
+        with _DB_LOCK:
+            self.conn.execute(
+                "INSERT INTO tools(ts, name, version, provider, meta_json) VALUES (?,?,?,?,?)",
+                (time.time(), name, version, provider, meta_json),
+            )
+            self.conn.commit()
+        try:
+            if getattr(self, "_mirror", None):
+                self._mirror.add_tool(name, version=version, provider=provider, meta=meta)
+        except Exception:
+            pass
 
     def recent_events(self, n: int = 200) -> List[Dict[str, Any]]:
         type_col, agent_col = self._event_colnames()

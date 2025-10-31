@@ -64,6 +64,38 @@ class ToolRegistry:
 # Singleton registry
 REGISTRY = ToolRegistry()
 
+# Tool descriptors for AutoAcquire and capability reporting
+TOOL_DESCRIPTORS: Dict[str, Dict[str, Any]] = {
+    # Playwright-backed browser tools
+    
+
+    "browser.*": {
+        "capabilities": ["browser", "web.screenshot", "web.snap"],
+        "requires": ["playwright"],
+        "imports": ["playwright"],
+        "post_install": [
+            {"type": "shell", "cmd": "python -m playwright install chromium", "timeout": 1200}
+        ],
+        "examples": [
+            "browser.snap url=https://example.com",
+            "browser.screenshot"
+        ],
+    },
+    "pdf.to_text": {
+        "capabilities": ["pdf.to_text", "doc.extract"],
+        "requires": ["pypdf2"],
+        "imports": ["PyPDF2"],
+        "examples": [
+            "pdf.to_text path=C:/docs/sample.pdf"
+        ],
+    },
+    "http.*": {
+        "capabilities": ["http.get", "http.post", "http.fetch"],
+        "requires": [],
+        "imports": [],
+    },
+}
+
 def _safe_register(modname: str) -> None:
     try:
         mod = importlib.import_module(modname)
@@ -95,6 +127,8 @@ for _m in (
     "tools.uimacros",
     "tools.schedule",
     "tools.browser",
+    "tools.piputil",
+    "tools.pdfutil",
 ):
     _safe_register(_m)
 

@@ -3,11 +3,13 @@ from __future__ import annotations
 import os
 from typing import Optional, Dict, Any, List
 
+
 def _need_deps():
     try:
         import PyPDF2  # noqa
     except Exception as e:
         raise RuntimeError("PyPDF2 missing. Run: pip install pypdf2") from e
+
 
 def extract_text(path: str, max_pages: Optional[int] = None) -> Dict[str, Any]:
     _need_deps()
@@ -28,3 +30,7 @@ def extract_text(path: str, max_pages: Optional[int] = None) -> Dict[str, Any]:
         return {"ok": True, "pages": len(out), "text": "\n".join(out)}
     except Exception as e:
         return {"ok": False, "error": f"pdf read failed: {e}"}
+
+
+def register(reg) -> None:
+    reg.add("pdf.to_text", extract_text, desc="Extract text from a PDF file -> {ok,pages,text}")

@@ -1,6 +1,7 @@
 from __future__ import annotations
 import os, sys, subprocess
 
+
 def install(package: str, danger: bool = False) -> dict:
     """
     Install a pip package into the current venv.
@@ -26,3 +27,7 @@ def install(package: str, danger: bool = False) -> dict:
         }
     except Exception as e:
         return {"ok": False, "error": str(e)}
+
+
+def register(reg) -> None:
+    reg.add("pip.install", install, desc="Install a pip package into current environment (gated by AGENT_DANGER_MODE)")
