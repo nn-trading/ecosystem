@@ -37,23 +37,45 @@ class ToolRegistry:
                 tool = self._tools[name]
             else:
                 return {"ok": False, "error": f"tool not found: {name}"}
+        def _emit(topic: str, payload: Dict[str, Any]) -> None:
+            if self._tracer:
+                try:
+                    self._tracer(topic, payload)
+                except Exception:
+                    pass
+        # First attempt
         try:
-            if self._tracer:
-                try:
-                    self._tracer("tool/call", {"tool": name, "args": kwargs})
-                except Exception:
-                    pass
+            _emit("tool/call", {"tool": name, "args": kwargs})
             res = tool["fn"](**kwargs)
-            if self._tracer:
-                try:
-                    self._tracer("tool/result", {"tool": name, "result": res})
-                except Exception:
-                    pass
+            _emit("tool/result", {"tool": name, "result": res})
             if not isinstance(res, dict):
                 return {"ok": False, "error": f"tool {name} returned non-dict"}
             return res
         except Exception as e:
-            return {"ok": False, "error": f"{e.__class__.__name__}: {e}"}
+            # Try AutoAcquire only for likely dependency errors
+            msg = f"{e.__class__.__name__}: {e}"
+            low = str(e).lower()
+            dep_hint = (e.__class__.__name__ in ("ImportError", "ModuleNotFoundError")) or ("pip install" in low) or ("missing" in low) or ("not found" in low and "file" not in low)
+            if dep_hint:
+                try:
+                    from core.autoacquire import ensure_for_tool as _ensure
+                except Exception:
+                    return {"ok": False, "error": msg}
+                acq = _ensure(self, name)
+                _emit("tool/autoacquire", {"tool": name, "result": acq})
+                if isinstance(acq, dict) and acq.get("ok"):
+                    # Retry once after acquisition
+                    try:
+                        res2 = tool["fn"](**kwargs)
+                        _emit("tool/result", {"tool": name, "result": res2})
+                        if not isinstance(res2, dict):
+                            return {"ok": False, "error": f"tool {name} returned non-dict after autoacquire"}
+                        return res2
+                    except Exception as e2:
+                        return {"ok": False, "error": f"{e2.__class__.__name__}: {e2}", "autoacquire": acq}
+                else:
+                    return {"ok": False, "error": msg, "autoacquire": acq}
+            return {"ok": False, "error": msg}
 
     def list(self) -> Dict[str, str]:
         return {k: v.get("desc", "") for k, v in self._tools.items()}
@@ -94,6 +116,11 @@ TOOL_DESCRIPTORS: Dict[str, Dict[str, Any]] = {
         "requires": [],
         "imports": [],
     },
+    "runtime.*": {
+        "capabilities": ["runtime.children", "runtime.kill_pid", "runtime.kill_children", "runtime.list_procs", "runtime.soft_reboot"],
+        "requires": ["psutil"],
+        "imports": ["psutil"],
+    },
 }
 
 def _safe_register(modname: str) -> None:
@@ -129,6 +156,9 @@ for _m in (
     "tools.browser",
     "tools.piputil",
     "tools.pdfutil",
+    "tools.reposearch",
+    "tools.runtime",
+    "tools.omega",
 ):
     _safe_register(_m)
 

@@ -84,6 +84,40 @@ GPT-5 Desktop Ecosystem ready. Type your instruction. '/status' or '/tools' or '
 
 
 # --- Helpers: ASCII sanitize and TASKS.md writer ---
+# --- Helpers: Proof artifacts (ToolsRegistry, descriptors) ---
+
+def _write_tools_proof(tools) -> None:
+    try:
+        repo = _repo_root()
+        proof_dir = os.path.join(repo, "logs", "proofs")
+        os.makedirs(proof_dir, exist_ok=True)
+        # Tools names
+        try:
+            names = tools.available() if hasattr(tools, "available") else []
+        except Exception:
+            names = []
+        names = names or []
+        write_text_ascii(os.path.join(proof_dir, "tools_registry_names.txt"), "\n".join([str(n) for n in names]))
+        # Descriptor keys
+        desc_keys = []
+        try:
+            from core.tools import TOOL_DESCRIPTORS as _TD
+            desc_keys = sorted(list(_TD.keys()))
+        except Exception:
+            desc_keys = []
+        write_text_ascii(os.path.join(proof_dir, "tool_descriptors_keys.txt"), "\n".join([str(k) for k in desc_keys]))
+        # AutoAcquire env snapshot
+        try:
+            info = {
+                "AGENT_DANGER_MODE": str(os.environ.get("AGENT_DANGER_MODE", "0")),
+                "AUTOACQUIRE_MAX": str(os.environ.get("AUTOACQUIRE_MAX", "2")),
+            }
+            write_text_ascii(os.path.join(proof_dir, "autoacquire_env.txt"), "\n".join([f"{k}={v}" for k, v in info.items()]))
+        except Exception:
+            pass
+    except Exception:
+        pass
+
 
 
 # --- Helpers: PID files and cleanup ---
@@ -365,6 +399,33 @@ async def main():
             print("AI: ToolsRegistry:", ", ".join(avail))
             try:
                 await bus.publish("ui/print", {"text": "[Main] Tools: " + ", ".join(avail)}, sender="Main")
+            except Exception:
+                pass
+    except Exception:
+        pass
+
+    # Write ToolsRegistry proof artifacts (single invocation)
+    try:
+        _write_tools_proof(tools)
+    except Exception:
+        pass
+    # Optional runtime proofs to validate AutoAcquire and tracing
+    try:
+        if str(os.environ.get("OMEGA_PROOFS", os.environ.get("TOOLS_PROOF", "0"))).strip().lower() in ("1", "true", "yes"):
+            repo = _repo_root(); proof_dir = os.path.join(repo, "logs", "proofs")
+            os.makedirs(proof_dir, exist_ok=True)
+            import json as _json
+            probe = tools.call("pdf.to_text", path=os.path.join(repo, "data", "_missing.pdf"), max_pages=1)
+            write_text_ascii(os.path.join(proof_dir, "autoacquire_probe.txt"), _sanitize_ascii(_json.dumps(probe, ensure_ascii=True)))
+            # Also probe repo.search and registry list
+            try:
+                search = tools.call("repo.search", root=repo, query="FINDSTR", regex=False, icase=True, max_results=50)
+                write_text_ascii(os.path.join(proof_dir, "repo_search_probe.json"), _sanitize_ascii(_json.dumps(search, ensure_ascii=True)))
+            except Exception:
+                pass
+            try:
+                names = tools.available() if hasattr(tools, "available") else []
+                write_text_ascii(os.path.join(proof_dir, "tools_registry_probe.txt"), "\n".join([str(n) for n in (names or [])]))
             except Exception:
                 pass
     except Exception:
