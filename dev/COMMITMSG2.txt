@@ -1,0 +1,6 @@
+Update session: controlled headless run verified; omega proofs generated; tasks updated with CORE-01/03 design notes (ASCII-only)
+
+- Ran dev/run_proofs.ps1; stderr clean; health snapshot appended
+- Emitted tools registry proofs; executed dev/omega_run.py to generate omega proofs
+- Updated logs/tasks.json session items; added design notes for CORE-03 and CORE-01
+- Added dev/update_session_tasks.py helper for ASCII-only updates
