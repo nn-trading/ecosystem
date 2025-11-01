@@ -5,7 +5,7 @@ This file tracks session status and resume checkpoints. ASCII-only/UTF-8.
 ## Current status
 - Repo: C:\bots\ecosys
 - Branch: feature/loggerdb-cli
-- Commit: 857e3b5
+- Commit: cfd66d0
 - Tools: LoggerDB CLI ready (dev\loggerdb_cli.py). FTS triggers are legacy-compatible; LIKE fallback preserved. Dynamic FTS with backfill validated (legacy + LIKE fallback).
 - Tests: pytest 34 passed, 1 skipped, 3 warnings
 - Pip: restored via ensurepip; requirements installed
@@ -49,7 +49,7 @@ This file tracks session status and resume checkpoints. ASCII-only/UTF-8.
 ## ASAT (Acceptance Suite Audit)
 - Last run: 2025-10-30 14:01:39 UTC
 - Output directory: C:\bots\ecosys\runs\20251030_140139
-- Commit: 857e3b5
+- Commit: d4fe77d
 - Artifacts:
   - summary: C:\bots\ecosys\runs\20251030_140139\summary.txt
   - stats: C:\bots\ecosys\runs\20251030_140139\stats.json
