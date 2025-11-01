@@ -47,3 +47,12 @@ Entry points and dependency summary
 - Dependencies (from requirements.txt): rich, pydantic, psutil, prompt-toolkit, openai, pytest
 - Virtual environment: .venv under repo root
 
+
+
+Recent run: 20251101_132524
+Pytest: 34 passed, 1 skipped, 0 warnings
+Smoke: headless foreground run completed (StopAfterSec=10)
+Artifacts: out, reports, artifacts under C:\bots
+PR: refs/pull/1/head -> feature/loggerdb-cli (local bare remote)
+PR summary: C:\bots\reports\PR_1.txt
+Push summary: C:\bots\reports\bringup_push_summary.txt
