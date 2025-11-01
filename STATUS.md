@@ -38,6 +38,6 @@ Notes
 - .gitignore excludes logs/, var/, runs/, workspace/logs/ artifacts, data/.
 
 Recent run: 20251101_115545
-Pytest: 4 passed, 1 warning in 0.31s
-Smoke: headless foreground run completed
-Artifacts: reports and out under C:\bots
+Pytest: 34 passed, 1 skipped, 3 warnings in 2.20s
+Smoke: headless foreground run completed (StopAfterSec=10)
+Artifacts: out, reports, artifacts under C:\bots
