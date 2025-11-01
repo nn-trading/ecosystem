@@ -38,6 +38,12 @@ Notes
 - .gitignore excludes logs/, var/, runs/, workspace/logs/ artifacts, data/.
 
 Recent run: 20251101_115545
-Pytest: 34 passed, 1 skipped, 3 warnings in 2.20s
+Pytest: 34 passed, 1 skipped, 0 warnings
 Smoke: headless foreground run completed (StopAfterSec=10)
 Artifacts: out, reports, artifacts under C:\bots
+Entry points and dependency summary
+- Entry points: start.ps1, maintain.ps1, main.py
+- EventLog CLI: dev\eventlog_cli.py (stats, recent, search, snapshot-run)
+- Dependencies (from requirements.txt): rich, pydantic, psutil, prompt-toolkit, openai, pytest
+- Virtual environment: .venv under repo root
+

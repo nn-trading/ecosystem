@@ -8,7 +8,6 @@ _ALLOWED_NODES = (
     ast.Expression,
     ast.UnaryOp,
     ast.BinOp,
-    ast.Num,
     ast.Add,
     ast.Sub,
     ast.Mult,
@@ -33,8 +32,6 @@ def _safe_eval(node: ast.AST) -> float:
         if isinstance(node.value, (int, float)):
             return float(node.value)
         raise ValueError("constants other than numbers not allowed")
-    if isinstance(node, ast.Num):  # Py<3.8 compatibility
-        return float(node.n)
     if isinstance(node, ast.UnaryOp):
         v = _safe_eval(node.operand)
         if isinstance(node.op, ast.UAdd):

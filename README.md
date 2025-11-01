@@ -41,3 +41,10 @@ Examples
 - Stop
   powershell -NoProfile -File .\start.ps1 -Stop 1
 
+
+One-shot bring-up
+- Run the orchestrator to stop background, ensure venv/deps, run a short headless smoke, run pytest, inventory files, and export artifacts:
+  powershell -NoProfile -File .\dev\one_shot_bringup.ps1
+- Artifacts will be placed under C:\bots\out, C:\bots\reports, and C:\bots\artifacts.
+- Outputs are ASCII-only when possible and paths are resolved dynamically at runtime.
+
