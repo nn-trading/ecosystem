@@ -39,14 +39,20 @@ def main() -> int:
     tasks = dedupe_by_id(tasks)
     session = dedupe_by_id(session)
 
-    # Ensure session items are marked done
+    # Ensure session items are marked done/todo
     now_tag = time.strftime('%Y-%m-%d %H:%M:%S', time.localtime())
-    ensure = [
+    ensure_done = [
         ('TT-ALIGN-TASKS', 'Align interactive task tracker with logs/tasks.json and TASKS.md (ASCII-only)'),
         ('DECIDE-PREFLIGHT', 'Decide disposition of dev/preflight.py (track/ignore/remove) and act'),
+        ('UPDATE-RUNBOOK', 'Update RUNBOOK.md with HEAD and latest snapshot path'),
+        ('CORE-01-NEXT', 'Bootstrap rule-based intent parser skeleton (core/intent.py)'),
+    ]
+    ensure_todo = [
+        ('summarize-progress', 'Summarize progress and close out session'),
+        ('GIT-REMOTE', 'Configure remote only if push is requested'),
     ]
     idx = {str(t.get('id')): t for t in session if isinstance(t, dict)}
-    for tid, title in ensure:
+    for tid, title in ensure_done:
         if tid in idx:
             t = idx[tid]
             t['status'] = 'done'
@@ -56,6 +62,13 @@ def main() -> int:
                 t['notes'] = (notes + ('; ' if notes else '') + tag)
         else:
             session.append({'id': tid, 'title': title, 'status': 'done', 'notes': f'done {now_tag}'})
+    for tid, title in ensure_todo:
+        if tid in idx:
+            t = idx[tid]
+            if not t.get('status'):
+                t['status'] = 'todo'
+        else:
+            session.append({'id': tid, 'title': title, 'status': 'todo'})
 
     data['tasks'] = tasks
     data['session_tasks'] = session
