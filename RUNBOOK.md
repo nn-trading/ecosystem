@@ -5,7 +5,7 @@ This file tracks session status and resume checkpoints. ASCII-only/UTF-8.
 ## Current status
 - Repo: C:\bots\ecosys
 - Branch: feature/loggerdb-cli
-- Commit: b2e32ec
+- Commit: a6ffadc
 - Tools: LoggerDB CLI ready (dev\loggerdb_cli.py). FTS triggers are legacy-compatible; LIKE fallback preserved. Dynamic FTS with backfill validated (legacy + LIKE fallback).
 - Tests: pytest 34 passed, 1 skipped, 3 warnings
 - Pip: restored via ensurepip; requirements installed
