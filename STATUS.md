@@ -36,3 +36,8 @@ EventLog CLI
 Notes
 - All files written by tools prefer ASCII. JSON dumps use ensure_ascii=true.
 - .gitignore excludes logs/, var/, runs/, workspace/logs/ artifacts, data/.
+
+Recent run: 20251101_115545
+Pytest: 4 passed, 1 warning in 0.31s
+Smoke: headless foreground run completed
+Artifacts: reports and out under C:\bots
