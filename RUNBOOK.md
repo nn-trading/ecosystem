@@ -49,7 +49,7 @@ This file tracks session status and resume checkpoints. ASCII-only/UTF-8.
 ## ASAT (Acceptance Suite Audit)
 - Last run: 2025-10-30 14:01:39 UTC
 - Output directory: C:\bots\ecosys\runs\20251030_140139
-- Commit: d4fe77d
+- Commit: 857e3b5
 - Artifacts:
   - summary: C:\bots\ecosys\runs\20251030_140139\summary.txt
   - stats: C:\bots\ecosys\runs\20251030_140139\stats.json

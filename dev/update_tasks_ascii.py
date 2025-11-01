@@ -1,5 +1,5 @@
 # Update logs/tasks.json in ASCII-safe manner: dedupe entries and mark session items
-import json, time
+import json, time, subprocess
 from pathlib import Path
 
 def dedupe_by_id(items):
