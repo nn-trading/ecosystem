@@ -123,6 +123,7 @@ class BrainAgent:
         except Exception:
             self._retry_budget_default = 3
         self._retry_counts: dict[str, int] = {}
+        self._job_plans: dict[str, Dict[str, Any]] = {}
 
     def _reset_budget(self, job_id: str | None) -> None:
         try:
@@ -338,10 +339,17 @@ class BrainAgent:
         plan = self._plan_for_text(text)
         # Determine job ID from incoming message (for tracking across agents)
         job_id = getattr(msg, "job_id", None) or (msg.get("job_id") if isinstance(msg, dict) else None)
+        # Persist plan for this job so retries can reuse or modify it
+        try:
+            jid = str(job_id or "")
+            if jid:
+                self._job_plans[jid] = plan
+        except Exception:
+            pass
         # Publish the plan for logging and TesterAgent to examine
         await self.bus.publish("task/plan", plan, sender=self.name, job_id=job_id)
         # Hand off execution of the plan's steps to the WorkerAgent (AI-3)
-        await self.bus.publish("task/exec", {"steps": plan.get("steps", [])}, sender=self.name, job_id=job_id)
+        await self.bus.publish("task/exec", {"plan": plan, "steps": plan.get("steps", [])}, sender=self.name, job_id=job_id)
         return plan
 
     # --------- UPDATED: Run method adds retry handler and uses bus.on ----------
@@ -395,8 +403,15 @@ class BrainAgent:
                             sender=self.name, job_id=job_id,
                         )
                     if plan:
+                        # Persist provided plan for this job for future retries
+                        try:
+                            jid = str(job_id or "")
+                            if jid:
+                                self._job_plans[jid] = plan
+                        except Exception:
+                            pass
                         await self.bus.publish("task/plan", plan, sender=self.name, job_id=job_id)
-                        await self.bus.publish("task/exec", {"steps": plan.get("steps", [])}, sender=self.name, job_id=job_id)
+                        await self.bus.publish("task/exec", {"plan": plan, "steps": plan.get("steps", [])}, sender=self.name, job_id=job_id)
                     else:
                         await self.plan(msg)
                 except Exception:
