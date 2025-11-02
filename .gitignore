@@ -43,3 +43,13 @@ data/
 
 COMMITMSG.txt
 
+# Local configuration (do not commit)
+config/
+
+# Ignore selected untracked dev helper scripts
+# Tracked dev tools remain; these patterns affect only new/untracked files
+/dev/doctor.py
+/dev/selfheal_cli.py
+/dev/final_status.ps1
+/dev/oneshot_status.ps1
+
