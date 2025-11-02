@@ -62,7 +62,7 @@ upsert(ses, {"id":"confirm-remote", "title":"Confirm git remote configuration (n
 upsert(ses, {"id":"CONFIRM-REMOTE", "title":"Confirm if remote should be configured for push", "status":"done", "notes":"origin present; push only on request"})
 upsert(ses, {"id":"fix-crash", "title":"Verify no crash in last run; document any non-fatal errors", "status":"done", "notes":"stderr logs empty; no .err files"})
 upsert(ses, {"id":"update-tasks-status", "title":"Update logs/tasks.json to reflect completed items and triage results; commit", "status":"done"})
-upsert(ses, {"id":"TASKS-encoding", "title":"Enforce ASCII-only for any TASKS.md writers; avoid emoji", "status":"todo", "notes":"External TASKS.md writer emits emoji; maintain ASCII-only in-repo writers"})
+upsert(ses, {"id":"TASKS-encoding", "title":"Enforce ASCII-only for any TASKS.md writers; avoid emoji", "status":"done", "notes":"Sessions/TASKS.md excluded via .gitignore; using ASCII-only logs/tasks.json; snapshots to logs/proofs/"})
 
 data['session_tasks'] = ses
 
