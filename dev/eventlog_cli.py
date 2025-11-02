@@ -107,7 +107,32 @@ def cmd_snapshot_run(args) -> int:
     summary_lines.append("Top topics:")
     for t, c in top:
         summary_lines.append(f"- {t}: {c}")
-    _write_text_ascii(run_dir / "summary.txt", "\n".join(summary_lines))
+    summary_txt = "\n".join(summary_lines)
+    _write_text_ascii(run_dir / "summary.txt", summary_txt)
+
+    # README and index for consumers
+    readme_lines = []
+    readme_lines.append("Ecosystem AI run snapshot (ASCII-only)")
+    readme_lines.append("")
+    readme_lines.append(f"Directory: runs/{ts}")
+    readme_lines.append(f"Total events: {stats.get('total')}")
+    readme_lines.append("Artifacts:")
+    readme_lines.append("- stats.json: DB stats")
+    readme_lines.append("- recent.json: recent events (chronological)")
+    readme_lines.append("- top_topics.json: [topic, count] pairs")
+    readme_lines.append("- summary.txt: human-readable summary")
+    _write_text_ascii(run_dir / "README.txt", "\n".join(readme_lines))
+
+    index = {
+        "ts": ts,
+        "dir": f"runs/{ts}",
+        "stats_path": f"runs/{ts}/stats.json",
+        "recent_path": f"runs/{ts}/recent.json",
+        "top_topics_path": f"runs/{ts}/top_topics.json",
+        "summary_path": f"runs/{ts}/summary.txt",
+        "readme_path": f"runs/{ts}/README.txt",
+    }
+    _write_json_ascii(run_dir / "index.json", index)
 
     print(str(run_dir))
     return 0
