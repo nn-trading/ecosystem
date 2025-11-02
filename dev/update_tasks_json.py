@@ -49,9 +49,6 @@ upsert(ses, {"id":"CONFIRM-REMOTE", "title":"Confirm if remote should be configu
 upsert(ses, {"id":"fix-crash", "title":"Verify no crash in last run; document any non-fatal errors", "status":"done", "notes":"stderr logs empty; no .err files"})
 upsert(ses, {"id":"update-tasks-status", "title":"Update logs/tasks.json to reflect completed items and triage results; commit", "status":"done"})
 upsert(ses, {"id":"TASKS-encoding", "title":"Enforce ASCII-only for any TASKS.md writers; avoid emoji", "status":"todo", "notes":"External TASKS.md writer emits emoji; maintain ASCII-only in-repo writers"})
-upsert(ses, {"id":"fix-crash", "title":"Verify no crash in last run; document any non-fatal errors", "status":"done", "notes":"stderr logs empty; no .err files"})
-upsert(ses, {"id":"update-tasks-status", "title":"Update logs/tasks.json to reflect completed items and triage results; commit", "status":"done"})
-upsert(ses, {"id":"TASKS-encoding", "title":"Enforce ASCII-only for any TASKS.md writers; avoid emoji", "status":"todo", "notes":"External TASKS.md writer emits emoji; maintain ASCII-only in-repo writers"})
 
 data['session_tasks'] = ses
 
