@@ -38,17 +38,10 @@ Notes
 - .gitignore excludes logs/, var/, runs/, workspace/logs/ artifacts, data/.
 
 Entry points and dependency summary
-Recent run: 20251102_100558
+Recent run: 20251102_102357
 Pytest: 34 passed, 1 skipped, 3 warnings
-Smoke: 60s background run completed; stdout captured to runs\current\smoke_60s.txt; summary no matches (routine)
-EventLog: snapshot at runs\20251102-100558 (stats/recent/top_topics)
-Artifacts: runs\current\smoke_60s.txt, runs\current\eventlog_recent.json, ops_log updated
-Next actions: TRIAGE-CORE; run direct 60s smoke; update tasks.json; confirm no stray processes
-
-Recent run: 20251102_100558
-Pytest: 34 passed, 1 skipped, 3 warnings
-Smoke: 60s background run completed; stdout captured to runs\current\smoke_60s.txt; summary no matches (routine)
-EventLog: snapshot at runs\20251102-100558 (stats/recent/top_topics)
+Smoke: 60s background run completed; stdout captured to runs\current\smoke_60s.txt; summary no matches
+EventLog: snapshot at runs\20251102-102357 (stats/recent/top_topics); Total events: 61930; Top topic: system/heartbeat
 Artifacts: runs\current\smoke_60s.txt, runs\current\eventlog_recent.json, ops_log updated
 Next actions: TRIAGE-CORE; run direct 60s smoke; update tasks.json; confirm no stray processes
 
@@ -66,11 +59,4 @@ Artifacts: out, reports, artifacts under C:\bots
 PR: refs/pull/1/head -> feature/loggerdb-cli (local bare remote)
 PR summary: C:\bots\reports\PR_1.txt
 Push summary: C:\bots\reports\bringup_push_summary.txt
-
-Recent run: 20251102_100558
-Pytest: 34 passed, 1 skipped, 3 warnings
-Smoke: 60s background run completed; stdout captured to runs\current\smoke_60s.txt; summary no matches (routine)
-EventLog: snapshot at runs\20251102-100558 (stats/recent/top_topics)
-Artifacts: runs\current\smoke_60s.txt, runs\current\eventlog_recent.json, ops_log updated
-Next actions: TRIAGE-CORE; run direct 60s smoke; update tasks.json; confirm no stray processes
 
