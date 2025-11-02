@@ -46,7 +46,7 @@ Smoke-fg: attempt blocked by harness; use smoke_60s_direct.txt as substitute; re
 
 EventLog: snapshot at runs\20251102-112235 (stats/recent/top_topics); Total events: 62129; Top topic: system/heartbeat
 Artifacts: runs\current\smoke_60s.txt, runs\current\smoke_60s_direct.txt, runs\current\eventlog_recent.json, ops_log updated
-Next actions: CORE-01-Design-Outline; CORE-01-Parser-Impl; CORE-01-Planner-API; CORE-01-Evaluator-Replan; CORE-03-Schema-Finalize; CORE-03-CLI-Converge; CORE-03-Snapshot-Spec; CORE-03-Search-Escapes; VCS hygiene; confirm remote; SMOKE-60S-FG rerun if needed
+Next actions: CORE-01-Parser-Impl; CORE-03-Schema-Finalize; CORE-03-CLI-Converge; CORE-03-Search-Escapes; TASKS-align-core01; VCS hygiene; confirm remote; DOC-next-steps; STATUS-refresh; fix-crash
 
 - Entry points: start.ps1, maintain.ps1, main.py
 - EventLog CLI: dev\eventlog_cli.py (stats, recent, search, snapshot-run)
