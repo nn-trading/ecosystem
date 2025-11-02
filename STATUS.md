@@ -41,9 +41,10 @@ Entry points and dependency summary
 Recent run: 20251102_102357
 Pytest: 34 passed, 1 skipped, 3 warnings
 Smoke: 60s background run completed; stdout captured to runs\current\smoke_60s.txt; summary no matches
+Smoke-direct: 60s foreground run captured to runs\current\smoke_60s_direct.txt; summary no matches
 EventLog: snapshot at runs\20251102-102357 (stats/recent/top_topics); Total events: 61930; Top topic: system/heartbeat
-Artifacts: runs\current\smoke_60s.txt, runs\current\eventlog_recent.json, ops_log updated
-Next actions: TRIAGE-CORE; run direct 60s smoke; update tasks.json; confirm no stray processes
+Artifacts: runs\current\smoke_60s.txt, runs\current\smoke_60s_direct.txt, runs\current\eventlog_recent.json, ops_log updated
+Next actions: TRIAGE-CORE; update tasks.json; VCS hygiene; confirm remote
 
 - Entry points: start.ps1, maintain.ps1, main.py
 - EventLog CLI: dev\eventlog_cli.py (stats, recent, search, snapshot-run)
