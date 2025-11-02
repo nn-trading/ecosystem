@@ -111,6 +111,8 @@ upsert(ses, {"id":"CONFIRM-REMOTE", "title":"Confirm if remote should be configu
 upsert(ses, {"id":"fix-crash", "title":"Verify no crash in last run; document any non-fatal errors", "status":"done", "notes":"stderr logs empty; no .err files"})
 upsert(ses, {"id":"update-tasks-status", "title":"Update logs/tasks.json to reflect completed items and triage results; commit", "status":"done"})
 upsert(ses, {"id":"TASKS-encoding", "title":"Enforce ASCII-only for any TASKS.md writers; avoid emoji", "status":"done", "notes":"Sessions/TASKS.md excluded via .gitignore; using ASCII-only logs/tasks.json; snapshots to logs/proofs/"})
+upsert(ses, {"id":"STATUS-Triage-Section", "title":"Deduplicate and finalize Triage details section in STATUS.md", "status":"done", "notes":"Removed repeated lines; kept concise ASCII-only sources list"})
+upsert(ses, {"id":"PROBE-PDF-Guard", "title":"Guard pdf.to_text autoacquire probe in main.py", "status":"done", "notes":"Skip if data/_missing.pdf absent; write skipped note"})
 
 # Additional session bookkeeping
 upsert(ses, {"id":"COMMIT", "title":"Stage and commit update_tasks_json.py and logs/tasks.json locally (no push)", "status":"done", "notes":f"Local commit; latest HEAD {head}"})

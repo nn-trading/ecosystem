@@ -415,7 +415,14 @@ async def main():
             repo = _repo_root(); proof_dir = os.path.join(repo, "logs", "proofs")
             os.makedirs(proof_dir, exist_ok=True)
             import json as _json
-            probe = tools.call("pdf.to_text", path=os.path.join(repo, "data", "_missing.pdf"), max_pages=1)
+            pdf_path = os.path.join(repo, "data", "_missing.pdf")
+            try:
+                if os.path.exists(pdf_path):
+                    probe = tools.call("pdf.to_text", path=pdf_path, max_pages=1)
+                else:
+                    probe = {"ok": True, "skipped": "missing file", "path": pdf_path}
+            except Exception as _e:
+                probe = {"ok": False, "error": f"{type(_e).__name__}: {_e}"}
             write_text_ascii(os.path.join(proof_dir, "autoacquire_probe.txt"), _sanitize_ascii(_json.dumps(probe, ensure_ascii=True)))
             # Also probe repo.search and registry list
             try:

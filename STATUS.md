@@ -17,11 +17,6 @@ Triage details
   - ui/print: fallback info corresponding to sysctl.launch; informational
   - tool/result: win.wait_title_contains: no-window; Add-Type compilation errors in temporary C#; non-fatal
   - tool/result: pdf.to_text: file not found at data\_missing.pdf; non-fatal
-  - ui/print: fallback info corresponding to sysctl.launch; informational
-  - tool/result: win.wait_title_contains: no-window; Add-Type compilation errors in temporary C#; non-fatal
-  - tool/result: pdf.to_text: file not found at data\_missing.pdf; non-fatal
-
-
 Usage examples (PowerShell)
 - Stop background processes
   powershell -NoProfile -File .\start.ps1 -Stop 1
