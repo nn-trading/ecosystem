@@ -33,6 +33,20 @@ for it in data.get('tasks', []):
         if add not in notes:
             it['notes'] = (notes + (' ' if notes else '') + add).strip()
         break
+# Ensure global fix-crash reflects session reality (done)
+fix_global = None
+for it in data.get('tasks', []):
+    if it.get('id') == 'fix-crash':
+        fix_global = it
+        break
+if fix_global is None:
+    data.setdefault('tasks', []).append({"id": "fix-crash", "title": "Fix any crash seen in stderr/health", "status": "done", "notes": "No crashes observed; triage complete"})
+else:
+    fix_global['status'] = 'done'
+    notes = fix_global.get('notes') or ''
+    add = 'No crashes observed; triage complete'
+    if add not in notes:
+        fix_global['notes'] = (notes + ('; ' if notes else '') + add)
 
 
 ses = list(data.get('session_tasks', []))
