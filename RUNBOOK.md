@@ -10,7 +10,7 @@ This file tracks session status and resume checkpoints. ASCII-only/UTF-8.
 - Tests: pytest 34 passed, 1 skipped, 3 warnings
 - Pip: restored via ensurepip; requirements installed
 - Working tree: clean
-- Latest snapshot: C:\bots\ecosys\runs\20251101-083336
+- Latest snapshot: C:\bots\ecosys\runs\20251102-083750
 
 ## Latest checks (2025-10-30)
 - ToolsRegistry: lists win.* and ui.* tools; registry OK
