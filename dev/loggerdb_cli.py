@@ -68,7 +68,9 @@ def cmd_snapshot_run(args) -> int:
     run_dir = Path("runs") / ts
     run_dir.mkdir(parents=True, exist_ok=True)
 
-    _write_json_ascii(run_dir / "stats.json", db.stats())
+    # Core JSON artifacts
+    stats = db.stats()
+    _write_json_ascii(run_dir / "stats.json", stats)
     _write_json_ascii(run_dir / "recent_events.json", db.recent_events(args.n))
     _write_json_ascii(run_dir / "artifacts.json", db.recent_artifacts(args.n))
     top = db.top_event_types(10)
@@ -76,14 +78,42 @@ def cmd_snapshot_run(args) -> int:
     # Compatibility with indexer expecting top_topics.json
     _write_json_ascii(run_dir / "top_topics.json", top)
 
+    # Human summary
     lines = []
     lines.append(f"LoggerDB snapshot: {ts}")
-    s = db.stats()
-    lines.append(f"Events: {s.get('events')} artifacts: {s.get('artifacts')} skills: {s.get('skills')} memories: {s.get('memories')}")
+    lines.append(f"Events: {stats.get('events')} artifacts: {stats.get('artifacts')} skills: {stats.get('skills')} memories: {stats.get('memories')}")
     lines.append("Top event types:")
     for t, c in top:
         lines.append(f"- {t}: {c}")
     _write_text_ascii(run_dir / "summary.txt", "\n".join(lines))
+
+    # README and index for consumers (converge with eventlog_cli)
+    readme_lines = []
+    readme_lines.append("Ecosystem AI LoggerDB snapshot (ASCII-only)")
+    readme_lines.append("")
+    readme_lines.append(f"Directory: runs/{ts}")
+    readme_lines.append(f"Events: {stats.get('events')} Artifacts: {stats.get('artifacts')}")
+    readme_lines.append("Artifacts:")
+    readme_lines.append("- stats.json: DB stats")
+    readme_lines.append("- recent_events.json: recent events (chronological)")
+    readme_lines.append("- artifacts.json: recent artifacts")
+    readme_lines.append("- top_event_types.json: [type, count] pairs")
+    readme_lines.append("- top_topics.json: alias for top_event_types.json")
+    readme_lines.append("- summary.txt: human-readable summary")
+    _write_text_ascii(run_dir / "README.txt", "\n".join(readme_lines))
+
+    index = {
+        "ts": ts,
+        "dir": f"runs/{ts}",
+        "stats_path": f"runs/{ts}/stats.json",
+        "recent_path": f"runs/{ts}/recent_events.json",
+        "artifacts_path": f"runs/{ts}/artifacts.json",
+        "top_event_types_path": f"runs/{ts}/top_event_types.json",
+        "top_topics_path": f"runs/{ts}/top_topics.json",
+        "summary_path": f"runs/{ts}/summary.txt",
+        "readme_path": f"runs/{ts}/README.txt",
+    }
+    _write_json_ascii(run_dir / "index.json", index)
 
     print(str(run_dir))
     return 0
