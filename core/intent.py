@@ -1,7 +1,7 @@
 from __future__ import annotations
 import re
 from dataclasses import dataclass, field
-from typing import List, Dict, Any, Tuple
+from typing import List, Dict, Any
 
 ASCII_JSON_KW = dict(ensure_ascii=True, separators=(",", ":"))
 
@@ -45,7 +45,6 @@ def plan_steps(intent: Intent) -> List[Dict[str, Any]]:
     return steps
 
 # ---- Planner API and evaluator (CORE-01) ----
-from typing import Tuple
 
 def planner_make_plan_from_intent(intent: Intent) -> Dict[str, Any]:
     title = f"Plan for: {intent.goal}" if intent.goal else "Plan"
@@ -60,8 +59,10 @@ def planner_make_plan_from_intent(intent: Intent) -> Dict[str, Any]:
     steps.extend(plan_steps(intent))
     return {"title": title, "rationale": "Parsed intent and built baseline plan", "steps": steps}
 
+
 def planner_make_plan(text: str) -> Dict[str, Any]:
     return planner_make_plan_from_intent(parse_intent(text or ""))
+
 
 def evaluate_success_from_texts(success: List[str], texts: List[str]) -> Dict[str, Any]:
     succ = [str(s).strip().lower() for s in (success or []) if str(s).strip()]
@@ -81,6 +82,7 @@ def evaluate_success_from_texts(success: List[str], texts: List[str]) -> Dict[st
     ok = (len(matched) >= min(1, len(succ))) if succ else bool(matched)
     return {"ok": bool(ok), "matched": matched}
 
+
 def replan_if_needed(plan: Dict[str, Any], evaluation: Dict[str, Any]) -> Dict[str, Any]:
     if evaluation.get("ok"):
         return plan
@@ -90,4 +92,8 @@ def replan_if_needed(plan: Dict[str, Any], evaluation: Dict[str, Any]) -> Dict[s
     plan2["steps"] = steps
     plan2["rationale"] = (plan.get("rationale") or "").rstrip() + " | Replan added"
     return plan2
+
+
+
+
 
