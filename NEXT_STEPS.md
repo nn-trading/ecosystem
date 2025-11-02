@@ -29,3 +29,4 @@ Session notes (ASCII-only):
 - Smoke-fg attempted via start.ps1 but blocked by harness. Use runs\current\smoke_60s_direct.txt as substitute; rerun with longer timeout if needed.
 - Focus next: CORE-01-Design-Outline; CORE-01-Parser-Impl; CORE-01-Planner-API; CORE-01-Evaluator-Replan; CORE-03-Schema-Finalize; CORE-03-CLI-Converge; CORE-03-Snapshot-Spec; CORE-03-Search-Escapes
 
+20251102-112235 snapshot-run created C:\bots\ecosys\runs\20251102-112235

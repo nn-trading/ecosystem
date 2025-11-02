@@ -44,7 +44,7 @@ Smoke: 60s background run completed; stdout captured to runs\current\smoke_60s.t
 Smoke-direct: 60s foreground run captured to runs\current\smoke_60s_direct.txt; summary no matches
 Smoke-fg: attempt blocked by harness; use smoke_60s_direct.txt as substitute; re-run with longer timeout if needed
 
-EventLog: snapshot at runs\20251102-102357 (stats/recent/top_topics); Total events: 61930; Top topic: system/heartbeat
+EventLog: snapshot at runs\20251102-112235 (stats/recent/top_topics); Total events: 62129; Top topic: system/heartbeat
 Artifacts: runs\current\smoke_60s.txt, runs\current\smoke_60s_direct.txt, runs\current\eventlog_recent.json, ops_log updated
 Next actions: CORE-01-Design-Outline; CORE-01-Parser-Impl; CORE-01-Planner-API; CORE-01-Evaluator-Replan; CORE-03-Schema-Finalize; CORE-03-CLI-Converge; CORE-03-Snapshot-Spec; CORE-03-Search-Escapes; VCS hygiene; confirm remote; SMOKE-60S-FG rerun if needed
 
