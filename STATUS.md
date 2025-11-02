@@ -37,11 +37,21 @@ Notes
 - All files written by tools prefer ASCII. JSON dumps use ensure_ascii=true.
 - .gitignore excludes logs/, var/, runs/, workspace/logs/ artifacts, data/.
 
-Recent run: 20251101_115545
-Pytest: 34 passed, 1 skipped, 0 warnings
-Smoke: headless foreground run completed (StopAfterSec=10)
-Artifacts: out, reports, artifacts under C:\bots
 Entry points and dependency summary
+Recent run: 20251102_100558
+Pytest: 34 passed, 1 skipped, 3 warnings
+Smoke: 60s background run completed; stdout captured to runs\current\smoke_60s.txt; summary no matches (routine)
+EventLog: snapshot at runs\20251102-100558 (stats/recent/top_topics)
+Artifacts: runs\current\smoke_60s.txt, runs\current\eventlog_recent.json, ops_log updated
+Next actions: TRIAGE-CORE; run direct 60s smoke; update tasks.json; confirm no stray processes
+
+Recent run: 20251102_100558
+Pytest: 34 passed, 1 skipped, 3 warnings
+Smoke: 60s background run completed; stdout captured to runs\current\smoke_60s.txt; summary no matches (routine)
+EventLog: snapshot at runs\20251102-100558 (stats/recent/top_topics)
+Artifacts: runs\current\smoke_60s.txt, runs\current\eventlog_recent.json, ops_log updated
+Next actions: TRIAGE-CORE; run direct 60s smoke; update tasks.json; confirm no stray processes
+
 - Entry points: start.ps1, maintain.ps1, main.py
 - EventLog CLI: dev\eventlog_cli.py (stats, recent, search, snapshot-run)
 - Dependencies (from requirements.txt): rich, pydantic, psutil, prompt-toolkit, openai, pytest
@@ -56,3 +66,11 @@ Artifacts: out, reports, artifacts under C:\bots
 PR: refs/pull/1/head -> feature/loggerdb-cli (local bare remote)
 PR summary: C:\bots\reports\PR_1.txt
 Push summary: C:\bots\reports\bringup_push_summary.txt
+
+Recent run: 20251102_100558
+Pytest: 34 passed, 1 skipped, 3 warnings
+Smoke: 60s background run completed; stdout captured to runs\current\smoke_60s.txt; summary no matches (routine)
+EventLog: snapshot at runs\20251102-100558 (stats/recent/top_topics)
+Artifacts: runs\current\smoke_60s.txt, runs\current\eventlog_recent.json, ops_log updated
+Next actions: TRIAGE-CORE; run direct 60s smoke; update tasks.json; confirm no stray processes
+

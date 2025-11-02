@@ -10,7 +10,8 @@
   [string]$Background = '1',
   [string]$PythonExe = "",
   [string]$Stop = '0',
-  [string]$RunPytest = '0'
+  [string]$RunPytest = '0',
+  [string]$DoMaintain = '1'
 )
 $ErrorActionPreference = 'Stop'
 $repo = $PSScriptRoot
@@ -58,6 +59,14 @@ if ($StopB) {
     } catch {}
     try { Remove-Item $pidFile -ErrorAction SilentlyContinue } catch {}
   }
+  try { Stop-Doctor } catch {}
+  # Kill any stray main.py processes launched from this repo (not tracked by pid files)
+  try {
+    $procs = Get-CimInstance Win32_Process | Where-Object { $_.CommandLine -like ("*{0}\\main.py*" -f $repo) }
+    foreach ($p in $procs) {
+      try { Stop-Process -Id $p.ProcessId -Force -ErrorAction SilentlyContinue; $stopped += $p.ProcessId } catch {}
+    }
+  } catch {}
   Write-Host ("[stop] Stopped PIDs: {0}" -f ($stopped -join ', '))
   return
 }
@@ -99,8 +108,12 @@ if ($EnsureDepsB) { Ensure-Deps -py $pyExe }
 
 # Pre-start maintenance: purge logs, vacuum DBs, optionally run pytest
 try {
-  Write-Host "[start] Running pre-start maintenance (purge logs, vacuum, pytest:$RunPytest)..."
-  & (Join-Path $repo 'maintain.ps1') -PurgeLogs -VacuumDbs -Restart:$false -EnsureDeps:$EnsureDepsB -RunPytest:$RunPytestB | Out-Host
+  if (To-Bool $DoMaintain) {
+    Write-Host "[start] Running pre-start maintenance (purge logs, vacuum, pytest:$RunPytest)..."
+    & (Join-Path $repo 'maintain.ps1') -PurgeLogs -VacuumDbs -Restart:$false -EnsureDeps:$EnsureDepsB -RunPytest:$RunPytestB | Out-Host
+  } else {
+    Write-Host "[start] Skipping pre-start maintenance (DoMaintain=0)"
+  }
 } catch { Write-Host "[start] Pre-start maintenance error: $($_.Exception.Message)" }
 
 # Build command line with per-process environment via cmd /c
@@ -139,9 +152,35 @@ if ($BackgroundB) {
   Write-Host "[start] Launched background process PID $childPid"
   Write-Host "[start] Stdout: $stdout"
   Write-Host "[start] Stderr: $stderr"
+  try { Start-Doctor } catch {}
 } else {
   & cmd.exe $cmdArgs
 }
 
+# ======= DOCTOR INTEGRATION START =======
+function Start-Doctor {
+  try {
+    $cfg = Join-Path $PSScriptRoot 'config/selfheal.yaml'
+    if (-not (Test-Path $cfg)) { return }
+    $cfgRaw = try { Get-Content $cfg -Raw } catch { '' }
+    if ($cfgRaw -notmatch 'enabled:\s*true') { return }
+    $py = Join-Path $PSScriptRoot '.venv/Scripts/python.exe'
+    if (-not (Test-Path $py)) { $py = (Get-Command python -ErrorAction SilentlyContinue | Select-Object -First 1).Source }
+    if (-not $py) { $py = 'python' }
+    $exists = Get-CimInstance Win32_Process | Where-Object { $_.CommandLine -like '*dev\doctor.py*' }
+    if ($exists) { return }
+    $args = @('dev\doctor.py','-RunLoop','-IntervalSec','20')
+    Start-Process -WindowStyle Hidden -FilePath $py -ArgumentList $args -WorkingDirectory $PSScriptRoot | Out-Null
+    Write-Host '[start] Doctor started.'
+  } catch { Write-Host ('[start] Doctor start failed: {0}' -f $_.Exception.Message) }
+}
 
+function Stop-Doctor {
+  try {
+    $procs = Get-CimInstance Win32_Process | Where-Object { $_.CommandLine -like '*dev\doctor.py*' }
+    foreach ($p in $procs) { Stop-Process -Id $p.ProcessId -Force -ErrorAction SilentlyContinue }
+    Write-Host '[stop] Doctor stopped (if running).'
+  } catch { Write-Host ('[stop] Doctor stop failed: {0}' -f $_.Exception.Message) }
+}
+# ======= DOCTOR INTEGRATION END =======
 
