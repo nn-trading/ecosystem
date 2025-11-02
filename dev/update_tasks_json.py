@@ -42,6 +42,17 @@ upsert(ses, {"id":"CORE-03-CLI-FIX-TABS", "title":"CLI output spacing/tabs norma
 upsert(ses, {"id":"ASCII-02-SYNC", "title":"Sync logs/tasks.json with current state (ASCII-only)", "status":"done", "notes":"Updated with CORE-03 notes and session items"})
 upsert(ses, {"id":"RUNBOOK-Refresh", "title":"Refresh RUNBOOK with branch/HEAD and snapshot path", "status":"done", "notes":"Branch feature/loggerdb-cli; HEAD 4e400f1; snapshot runs\\20251030_112053; FTS/LIKE documented"})
 
+# Upsert session items based on recent triage
+upsert(ses, {"id":"TRIAGE-EventLog", "title":"Search EventLog DB for 'error','exception','fatal','Traceback' and summarize", "status":"done", "notes":"fatal=0; Traceback=0; tool-level errors only"})
+upsert(ses, {"id":"confirm-remote", "title":"Confirm git remote configuration (no pushes)", "status":"done", "notes":"origin set; no push planned"})
+upsert(ses, {"id":"CONFIRM-REMOTE", "title":"Confirm if remote should be configured for push", "status":"done", "notes":"origin present; push only on request"})
+upsert(ses, {"id":"fix-crash", "title":"Verify no crash in last run; document any non-fatal errors", "status":"done", "notes":"stderr logs empty; no .err files"})
+upsert(ses, {"id":"update-tasks-status", "title":"Update logs/tasks.json to reflect completed items and triage results; commit", "status":"done"})
+upsert(ses, {"id":"TASKS-encoding", "title":"Enforce ASCII-only for any TASKS.md writers; avoid emoji", "status":"todo", "notes":"External TASKS.md writer emits emoji; maintain ASCII-only in-repo writers"})
+upsert(ses, {"id":"fix-crash", "title":"Verify no crash in last run; document any non-fatal errors", "status":"done", "notes":"stderr logs empty; no .err files"})
+upsert(ses, {"id":"update-tasks-status", "title":"Update logs/tasks.json to reflect completed items and triage results; commit", "status":"done"})
+upsert(ses, {"id":"TASKS-encoding", "title":"Enforce ASCII-only for any TASKS.md writers; avoid emoji", "status":"todo", "notes":"External TASKS.md writer emits emoji; maintain ASCII-only in-repo writers"})
+
 data['session_tasks'] = ses
 
 data['updated_ts'] = int(time.time())
