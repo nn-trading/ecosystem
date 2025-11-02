@@ -9,6 +9,7 @@ State
 - start.ps1: numeric switches accepted (0/1) for Headless, Background, EnsureVenv, EnsureDeps, Stop, RunPytest
 - Logs: logs\start_stdout.log and logs\start_stderr.log
 - Bridge: main.py publishes system/heartbeat and system/health to EventLog via bridge
+- Triage summary: error=5; exception=2; fatal=0; Traceback=0
 
 Usage examples (PowerShell)
 - Stop background processes
