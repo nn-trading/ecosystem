@@ -24,6 +24,16 @@ for it in data.get('tasks', []):
         if add not in notes:
             it['notes'] = (notes + (' ' if notes else '') + add).strip()
         break
+# Ensure CORE-03-CLI-Converge marked done and notes include snapshot-run
+for it in data.get('tasks', []):
+    if it.get('id') == 'CORE-03-CLI-Converge':
+        it['status'] = 'done'
+        notes = it.get('notes') or ''
+        add = 'stats, recent, search, snapshot-run'
+        if add not in notes:
+            it['notes'] = (notes + (' ' if notes else '') + add).strip()
+        break
+
 
 ses = list(data.get('session_tasks', []))
 upsert(ses, {"id":"CORE-03-CLI", "title":"LoggerDB CLI basics: stats/recent/search", "status":"done"})
