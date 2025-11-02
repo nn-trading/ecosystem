@@ -112,6 +112,10 @@ upsert(ses, {"id":"fix-crash", "title":"Verify no crash in last run; document an
 upsert(ses, {"id":"update-tasks-status", "title":"Update logs/tasks.json to reflect completed items and triage results; commit", "status":"done"})
 upsert(ses, {"id":"TASKS-encoding", "title":"Enforce ASCII-only for any TASKS.md writers; avoid emoji", "status":"done", "notes":"Sessions/TASKS.md excluded via .gitignore; using ASCII-only logs/tasks.json; snapshots to logs/proofs/"})
 
+# Additional session bookkeeping
+upsert(ses, {"id":"COMMIT", "title":"Stage and commit update_tasks_json.py and logs/tasks.json locally (no push)", "status":"done", "notes":f"Local commit; latest HEAD {head}"})
+upsert(ses, {"id":"OPTIONAL-Review-Errors", "title":"Investigate error and exception counts; update STATUS.md if warranted", "status":"done", "notes":f"Triage: {tri_note}; STATUS.md updated"})
+
 data['session_tasks'] = ses
 
 data['updated_ts'] = int(time.time())
