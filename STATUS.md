@@ -38,15 +38,15 @@ Notes
 - .gitignore excludes logs/, var/, runs/, workspace/logs/ artifacts, data/.
 
 Entry points and dependency summary
-Recent run: 20251102_102357
+Recent run: 20251102-142843
 Pytest: 34 passed, 1 skipped, 3 warnings
 Smoke: 60s background run completed; stdout captured to runs\current\smoke_60s.txt; summary no matches
 Smoke-direct: 60s foreground run captured to runs\current\smoke_60s_direct.txt; summary no matches
 Smoke-fg: attempt blocked by harness; use smoke_60s_direct.txt as substitute; re-run with longer timeout if needed
 
-EventLog: snapshot at runs\20251102-134358 (stats/recent/top_topics); Total events: 63506; Top topic: system/heartbeat
+EventLog: snapshot at runs\20251102-142843 (stats/recent/top_topics); Total events: 63957; Top topic: system/heartbeat
 Artifacts: runs\current\smoke_60s.txt, runs\current\smoke_60s_direct.txt, runs\current\eventlog_recent.json, ops_log updated
-Next actions: CORE-01-Parser-Impl; CORE-03-Schema-Finalize; CORE-03-Search-Escapes; TASKS-encoding; DOC-next-steps
+Next actions: CORE-01-Parser-Impl; CORE-03-Schema-Finalize; CORE-03-Search-Escapes; DOC-next-steps
 
 - Entry points: start.ps1, maintain.ps1, main.py
 - EventLog CLI: dev\eventlog_cli.py (stats, recent, search, snapshot-run)
