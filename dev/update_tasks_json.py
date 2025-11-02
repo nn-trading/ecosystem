@@ -1,4 +1,4 @@
-import json, time
+import json, time, io, subprocess
 from pathlib import Path
 
 p = Path('logs/tasks.json')
@@ -56,9 +56,57 @@ upsert(ses, {"id":"CORE-03-CLI-FIX-TABS", "title":"CLI output spacing/tabs norma
 upsert(ses, {"id":"ASCII-02-SYNC", "title":"Sync logs/tasks.json with current state (ASCII-only)", "status":"done", "notes":"Updated with CORE-03 notes and session items"})
 upsert(ses, {"id":"RUNBOOK-Refresh", "title":"Refresh RUNBOOK with branch/HEAD and snapshot path", "status":"done", "notes":"Branch feature/loggerdb-cli; HEAD 4e400f1; snapshot runs\\20251030_112053; FTS/LIKE documented"})
 
+# Triage counts and status
+
+def _read_json_len(pth: Path) -> int:
+    try:
+        with io.open(pth, 'r', encoding='ascii', errors='ignore') as f:
+            obj = json.load(f)
+        return len(obj) if isinstance(obj, list) else 0
+    except Exception:
+        return 0
+
+run_cur = Path('runs') / 'current'
+tri_counts = {
+    'error': _read_json_len(run_cur / 'eventlog_error.json'),
+    'exception': _read_json_len(run_cur / 'eventlog_exception.json'),
+    'fatal': _read_json_len(run_cur / 'eventlog_fatal.json'),
+    'Traceback': _read_json_len(run_cur / 'eventlog_traceback.json'),
+}
+tri_note = f"error={tri_counts['error']}; exception={tri_counts['exception']}; fatal={tri_counts['fatal']}; Traceback={tri_counts['Traceback']}"
+
+# HEAD/branch
+head = branch = '?'
+try:
+    head = subprocess.check_output(['git','rev-parse','--short','HEAD'], text=True).strip()
+    branch = subprocess.check_output(['git','rev-parse','--abbrev-ref','HEAD'], text=True).strip()
+except Exception:
+    pass
+
+# Upsert log triage and status refresh
+upsert(ses, {"id":"TRIAGE-LOGS", "title":"Triage logs and record counts", "status":"done", "notes":tri_note})
+upsert(ses, {"id":"REFRESH-STATUS", "title":"Refresh STATUS with latest branch/HEAD", "status":"done", "notes":f"branch={branch}; HEAD={head}"})
+
+# Deduplicate confirm-remote vs CONFIRM-REMOTE
+
+def _find_idx(lst, ident: str) -> int:
+    for i, it in enumerate(lst):
+        if it.get('id') == ident:
+            return i
+    return -1
+
+lo = _find_idx(ses, 'confirm-remote')
+up = _find_idx(ses, 'CONFIRM-REMOTE')
+if lo != -1 and up != -1:
+    n_up = ses[up].get('notes') or ''
+    n_lo = ses[lo].get('notes') or ''
+    merged = '; '.join([x for x in [n_up, n_lo] if x])
+    if merged:
+        ses[up]['notes'] = merged
+    ses = [it for it in ses if it.get('id') != 'confirm-remote']
+
 # Upsert session items based on recent triage
-upsert(ses, {"id":"TRIAGE-EventLog", "title":"Search EventLog DB for 'error','exception','fatal','Traceback' and summarize", "status":"done", "notes":"fatal=0; Traceback=0; tool-level errors only"})
-upsert(ses, {"id":"confirm-remote", "title":"Confirm git remote configuration (no pushes)", "status":"done", "notes":"origin set; no push planned"})
+upsert(ses, {"id":"TRIAGE-EventLog", "title":"Search EventLog DB for 'error','exception','fatal','Traceback' and summarize", "status":"done", "notes":tri_note})
 upsert(ses, {"id":"CONFIRM-REMOTE", "title":"Confirm if remote should be configured for push", "status":"done", "notes":"origin present; push only on request"})
 upsert(ses, {"id":"fix-crash", "title":"Verify no crash in last run; document any non-fatal errors", "status":"done", "notes":"stderr logs empty; no .err files"})
 upsert(ses, {"id":"update-tasks-status", "title":"Update logs/tasks.json to reflect completed items and triage results; commit", "status":"done"})
