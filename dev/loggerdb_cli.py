@@ -62,6 +62,26 @@ def cmd_artifacts(args) -> int:
     return 0
 
 
+def cmd_artifacts(args) -> int:
+    db = LoggerDB()
+    rows = db.recent_artifacts(args.n)
+    if args.output:
+        _write_json_ascii(Path(args.output), rows)
+    else:
+        print(json.dumps(rows, **ASCII_JSON_KW))
+    return 0
+
+
+def cmd_db_path(args) -> int:
+    db = LoggerDB()
+    info = {"db_path": str(db.path)}
+    if args.output:
+        _write_json_ascii(Path(args.output), info)
+    else:
+        print(json.dumps(info, **ASCII_JSON_KW))
+    return 0
+
+
 def cmd_snapshot_run(args) -> int:
     db = LoggerDB()
     ts = time.strftime("%Y%m%d-%H%M%S", time.localtime())
@@ -142,6 +162,10 @@ def build_parser():
     sp.add_argument("-n", type=int, default=200, help="Number of artifacts")
     sp.add_argument("-o", "--output", help="Write JSON to file instead of stdout")
     sp.set_defaults(func=cmd_artifacts)
+
+    sp = sub.add_parser("db-path", help="Print resolved DB path")
+    sp.add_argument("-o", "--output", help="Write JSON to file instead of stdout")
+    sp.set_defaults(func=cmd_db_path)
 
     sp = sub.add_parser("snapshot-run", help="Write snapshot under runs/<ts>/")
     sp.add_argument("-n", type=int, default=200, help="Recent items to include")
