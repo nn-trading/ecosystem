@@ -6,9 +6,9 @@ from pathlib import Path
 from typing import Dict, Any, List, Tuple, Optional
 
 import os
-# Resolve DB path at runtime so tests can override via ECOSYS_MEMORY_DB even if module was pre-imported.
+# Resolve DB path at runtime so tests or runtime can override via ECOSYS_LOGGER_DB or ECOSYS_MEMORY_DB.
 def _default_db_path() -> Path:
-    p = os.environ.get("ECOSYS_MEMORY_DB")
+    p = os.environ.get("ECOSYS_LOGGER_DB") or os.environ.get("ECOSYS_MEMORY_DB")
     if p:
         try:
             return Path(p)
