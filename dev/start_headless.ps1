@@ -1,4 +1,4 @@
-﻿param(
+param(
   [int]$STOP_AFTER_SEC = $(if ($env:STOP_AFTER_SEC) { [int]$env:STOP_AFTER_SEC } else { 12 }),
   [int]$HEARTBEAT_SEC = $(if ($env:HEARTBEAT_SEC) { [int]$env:HEARTBEAT_SEC } else { 1 }),
   [int]$HEALTH_SEC = $(if ($env:HEALTH_SEC) { [int]$env:HEALTH_SEC } else { 5 })

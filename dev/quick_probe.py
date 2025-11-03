@@ -1,4 +1,4 @@
-﻿import os, json, subprocess
+import os, json, subprocess
 root = os.path.abspath(os.path.join(os.path.dirname(__file__), '..'))
 events = os.path.join(root, 'workspace', 'logs', 'events.jsonl')
 n = int(os.environ.get('PROBE_TAIL','5'))

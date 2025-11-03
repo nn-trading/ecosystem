@@ -1,4 +1,4 @@
-﻿from __future__ import annotations
+from __future__ import annotations
 import asyncio, uuid, re, json
 from typing import Any, Dict, Optional
 from .base_agent import BaseAgent

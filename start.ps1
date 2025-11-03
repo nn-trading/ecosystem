@@ -1,4 +1,4 @@
-﻿param(
+param(
   [string]$Headless = '1',
   [int]$StopAfterSec = 0,
   [int]$HeartbeatSec = 5,

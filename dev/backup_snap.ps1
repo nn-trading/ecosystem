@@ -1,4 +1,4 @@
-﻿param([int]$Keep=30)
+param([int]$Keep=30)
 $ErrorActionPreference = "SilentlyContinue"
 $repo = Split-Path -Parent $PSScriptRoot
 $dstBase = "C:\bots\backups"

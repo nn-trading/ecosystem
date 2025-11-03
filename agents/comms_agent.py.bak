@@ -1,4 +1,4 @@
-﻿import asyncio
+import asyncio
 import json
 from rich import print as rprint
 from agents.base_agent import BaseAgent

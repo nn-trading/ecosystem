@@ -1,4 +1,4 @@
-﻿# C:\bots\ecosys\main.py
+# C:\bots\ecosys\main.py
 from __future__ import annotations
 import os, asyncio, textwrap, json, datetime, sqlite3, time
 from typing import List, Dict, Any

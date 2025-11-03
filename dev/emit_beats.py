@@ -1,4 +1,4 @@
-﻿import os, time, asyncio, sys
+import os, time, asyncio, sys
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 from core.memory import Memory
 

@@ -1,4 +1,4 @@
-﻿import os, sys, re
+import os, sys, re
 
 p = r"C:\bots\ecosys\main.py"
 s = open(p,"r",encoding="utf-8").read()

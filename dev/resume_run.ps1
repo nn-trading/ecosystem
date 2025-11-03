@@ -1,4 +1,4 @@
-﻿param(
+param(
   [int]$STOP_AFTER_SEC = 60,
   [int]$HEARTBEAT_SEC = 1,
   [int]$HEALTH_SEC = 5,
