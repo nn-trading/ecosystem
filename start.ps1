@@ -210,14 +210,28 @@ if ($PSBoundParameters.ContainsKey("Stop") -and $Stop -eq 1) { Stop-Core }
 elseif ($PSBoundParameters.ContainsKey("Background") -and $Background -eq 1) { Start-Core }
 # ======= CORE INTEGRATION END =======
 
-# ======= CORE-04 MT5 PROBE (one-shot on background start) =======
-if ($BackgroundB) {
+
+
+# ======= TOOL HOOK START =======
+function Start-Tools {
   try {
     $py = Join-Path $PSScriptRoot ".venv\Scripts\python.exe"
-    Start-Process -WindowStyle Hidden -FilePath $py -ArgumentList "dev\core04_mt5.py" | Out-Null
-    Write-Host "[start] CORE-04 MT5 probe dispatched."
-  } catch { Write-Host "[start] CORE-04 dispatch failed: $($_.Exception.Message)" }
+    if (-not (Test-Path $py)) { $py = (Get-Command python -ErrorAction SilentlyContinue | Select-Object -First 1).Source }
+    if (-not $py) { $py = 'python' }
+    $exists = Get-CimInstance Win32_Process | Where-Object { $_.CommandLine -like '*dev\core02_tools_watch.py*' }
+    if ($exists) { return }
+    Start-Process -WindowStyle Hidden -FilePath $py -ArgumentList "dev\core02_tools_watch.py" -WorkingDirectory $PSScriptRoot | Out-Null
+    Write-Host '[start] Tools watcher started.'
+  } catch { Write-Host ('[start] Tools watcher start failed: {0}' -f $_.Exception.Message) }
 }
-# ======= END CORE-04 =======
-
+function Stop-Tools {
+  try {
+    $procs = Get-CimInstance Win32_Process | Where-Object { $_.CommandLine -like '*dev\core02_tools_watch.py*' }
+    foreach ($p in $procs) { Stop-Process -Id $p.ProcessId -Force -ErrorAction SilentlyContinue }
+    Write-Host '[stop] Tools watcher stopped (if running).'
+  } catch { Write-Host ('[stop] Tools watcher stop failed: {0}' -f $_.Exception.Message) }
+}
+if ($PSBoundParameters.ContainsKey("Stop") -and $Stop -eq 1) { Stop-Tools }
+elseif ($PSBoundParameters.ContainsKey("Background") -and $Background -eq 1) { Start-Tools }
+# ======= TOOL HOOK END =======
 

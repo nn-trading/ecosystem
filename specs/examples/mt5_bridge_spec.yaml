@@ -1,0 +1,4 @@
+name: mt5_bridge
+module: mt5_bridge
+entry: init
+notes: example only; not executed

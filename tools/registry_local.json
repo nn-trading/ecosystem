@@ -1,0 +1,7 @@
+{
+  "echo_test": {
+    "module": "tools.echo_test.echo_test",
+    "entry": "init",
+    "updated": "20251103_123503"
+  }
+}
