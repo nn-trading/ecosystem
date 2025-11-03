@@ -9,8 +9,9 @@ State
 - start.ps1: numeric switches accepted (0/1) for Headless, Background, EnsureVenv, EnsureDeps, Stop, RunPytest
 - Logs: logs\start_stdout.log and logs\start_stderr.log
 - Bridge: main.py publishes system/heartbeat and system/health to EventLog via bridge
-- Triage summary: error=5; exception=2; fatal=0; Traceback=0
+- Triage summary: error=5; exception=2; fatal=0; traceback=0 (non-fatal sources observed)
 
+- Snapshot: runs\20251103-022326 captured (summary, stats, recent, top_topics)
 Triage details
 - Sources observed in runs\current:
   - tool/result: sysctl.launch fallback to notepad; missing exe; non-fatal

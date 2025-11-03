@@ -404,6 +404,8 @@ END;
             )
             cur = self.conn.execute(sql, (query, int(k)))
             rows = cur.fetchall()
+            if not rows and any(ch in str(query) for ch in ('/', ':', ' ', '*', '"', "'", '\\', '|')):
+                raise RuntimeError('fts_empty_fallback')
         except Exception:
             like = f"%{query}%"
             where_bits = ["payload_json LIKE ?"]
