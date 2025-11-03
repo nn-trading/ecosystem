@@ -14,7 +14,8 @@ State
 - Snapshot: runs\20251103-044804 captured (summary, stats, recent, top_topics)
 - Reports: C:\bots\reports\ascii_checks.json; C:\bots\reports\pytest_output.txt
 - Artifacts: C:\bots\artifacts\pytest_junit.xml; C:\bots\artifacts\loggerdb_cli_smoke.json
-- DB path unified: var\events.db (override via ECOSYS_MEMORY_DB)
+- DB path unified (verified): var\events.db (override via ECOSYS_MEMORY_DB). Scan: C:\bots\reports\db_unify_scan.txt
+- LoggerDB CLI outputs: db_path_snapshot.json, loggerdb_stats.json, loggerdb_recent_20.json, loggerdb_search_heartbeat.json under C:\bots\reports
 Triage details
 - Sources observed in runs\current:
   - tool/result: sysctl.launch fallback to notepad; missing exe; non-fatal

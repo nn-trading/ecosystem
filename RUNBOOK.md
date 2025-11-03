@@ -9,7 +9,7 @@ This file tracks session status and resume checkpoints. ASCII-only/UTF-8.
 - Tools: LoggerDB CLI ready (dev\loggerdb_cli.py). FTS triggers are legacy-compatible; LIKE fallback preserved. Dynamic FTS with backfill validated (legacy + LIKE fallback).
 - Tests: pytest 34 passed, 1 skipped, 3 warnings
 - Pip: restored via ensurepip; requirements installed
-- Working tree: clean
+- Working tree: clean (dev\ops_session.ps1 added to write ASCII ops logs and reports under C:\bots\reports). DB unify verified: var\events.db (override via ECOSYS_MEMORY_DB). maintain.ps1 VACUUM prefers ECOSYS_MEMORY_DB or defaults to var\events.db
 - Latest snapshot: C:\bots\ecosys\runs\20251102-083750
 
 ## Latest checks (2025-10-30)
