@@ -167,15 +167,6 @@ try {
 } catch { Write-Host "[start] DB health probe failed: $($_.Exception.Message)" }
 # ======= DB HEALTH INTEGRATION END =======
 
-
-# ======= DB HEALTH INTEGRATION START =======
-try {
-  $py = Join-Path $PSScriptRoot ".venv\Scripts\python.exe"
-  Start-Process -WindowStyle Hidden -FilePath $py -ArgumentList "dev\db_unify.py","health" | Out-Null
-  Write-Host "[start] DB health probe dispatched."
-} catch { Write-Host "[start] DB health probe failed: $($_.Exception.Message)" }
-# ======= DB HEALTH INTEGRATION END =======
-
 # ======= DOCTOR INTEGRATION START =======
 function Start-Doctor {
   try {
