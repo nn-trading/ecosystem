@@ -56,9 +56,6 @@ config/
 # Reports directory (local artifacts)
 reports/
 
-# Reports directory (local artifacts)
-reports/
-
 # Ignore sessions runtime artifacts
 sessions/
 # Ignore PowerShell helper scripts in logs
