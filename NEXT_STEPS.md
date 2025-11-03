@@ -29,7 +29,7 @@ Session notes (ASCII-only):
 - Commits: 3999aec, e0c8dde
 - Tests: added tests/test_eventlog_search.py (FTS success + LIKE fallback) and extended tests/test_logger_db.py with LIKE-fallback path; pytest passed (1 skipped)
 - CLI: search uses positional query (example above); all CLI outputs are ASCII JSON
-- Pending: CORE-01, IMPL-CORE-01, DB-UNIFY, ASCII-AUDIT (task tracker writer non-ASCII), DOC-NEXT finalize
+- Pending: CORE-01, CORE-02, CORE-03, REC-02, DB-UNIFY, DOC-Update
 - Smoke-fg attempted via start.ps1 but blocked by harness. Use runs\current\smoke_60s_direct.txt as substitute; rerun with longer timeout if needed.
 
 20251102-112235 snapshot-run created C:\bots\ecosys\runs\20251102-112235

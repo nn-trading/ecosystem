@@ -186,7 +186,11 @@ except Exception as e:
     $vacPy = Join-Path $maintDir 'vacuum_sqlite.py'
     Set-Content -Path $vacPy -Value $vacScript -Encoding utf8
 
-    $dbs = @('C:\bots\data\memory.db', (Join-Path $repo 'var\events.db'), (Join-Path $repo 'data\ecosys.db'))
+    # Prefer ECOSYS_MEMORY_DB if set; also check common legacy paths if they exist
+    $dbs = @()
+    if ($env:ECOSYS_MEMORY_DB) { $dbs += $env:ECOSYS_MEMORY_DB }
+    $dbs += @((Join-Path $repo 'var\events.db'), 'C:\bots\data\memory.db', (Join-Path $repo 'data\ecosys.db'))
+    $dbs = $dbs | Select-Object -Unique
     foreach ($db in $dbs) {
       if (Test-Path $db) {
         Write-Log "Vacuuming $db"

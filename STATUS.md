@@ -11,7 +11,10 @@ State
 - Bridge: main.py publishes system/heartbeat and system/health to EventLog via bridge
 - Triage summary: error=5; exception=2; fatal=0; traceback=0 (non-fatal sources observed)
 
-- Snapshot: runs\20251103-022326 captured (summary, stats, recent, top_topics)
+- Snapshot: runs\20251103-044804 captured (summary, stats, recent, top_topics)
+- Reports: C:\bots\reports\ascii_checks.json; C:\bots\reports\pytest_output.txt
+- Artifacts: C:\bots\artifacts\pytest_junit.xml; C:\bots\artifacts\loggerdb_cli_smoke.json
+- DB path unified: var\events.db (override via ECOSYS_MEMORY_DB)
 Triage details
 - Sources observed in runs\current:
   - tool/result: sysctl.launch fallback to notepad; missing exe; non-fatal

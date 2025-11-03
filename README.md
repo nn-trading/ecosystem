@@ -26,6 +26,7 @@ Behavior
 
 Paths
 - Database: var\events.db
+- Override: set ECOSYS_MEMORY_DB to an absolute path to change the default
 - Logs: logs\start_stdout.log, logs\start_stderr.log
 - Snapshots: runs\YYYYMMDD-HHMMSS
 
