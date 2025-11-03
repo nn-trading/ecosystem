@@ -49,3 +49,25 @@ One-shot bring-up
 - Artifacts will be placed under C:\bots\out, C:\bots\reports, and C:\bots\artifacts.
 - Outputs are ASCII-only when possible and paths are resolved dynamically at runtime.
 
+
+ToolForge and local tool development
+- Create a spec in reports\inbox_tools, for example reports\inbox_tools\sample_calc.yaml:
+  name: sample_calc
+  entry: main
+  description: sample tool skeleton
+- Run: python dev\toolforge.py run
+- ToolForge generates tools\<name>\<name>.py and <name>_cli.py, and updates tools\registry_local.json
+- The spec is moved to reports\processed_tools with .done suffix after processing
+
+
+Watcher flow
+- start.ps1 launches the tools watcher (dev\core02_tools_watch.py) when Background=1
+- The watcher monitors reports\inbox_tools and runs ToolForge for new specs
+- Generated tools are auto-registered via tools\registry_local.json
+
+Notes
+- Numeric switches in PowerShell scripts accept 0/1 for booleans
+- Logs are under logs\; pytest artifacts: logs\pytest_stdout.log, logs\pytest_stderr.log
+- Known benign warning: on Python versions lacking ctypes.wintypes.LRESULT, tools.winui_pid defines a safe fallback and import continues
+
+
