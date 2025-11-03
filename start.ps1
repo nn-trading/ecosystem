@@ -60,6 +60,7 @@ if ($StopB) {
     try { Remove-Item $pidFile -ErrorAction SilentlyContinue } catch {}
   }
   try { Stop-Doctor } catch {}
+  try { Stop-Core } catch {}
   # Kill any stray main.py processes launched from this repo (not tracked by pid files)
   try {
     $procs = Get-CimInstance Win32_Process | Where-Object { $_.CommandLine -like ("*{0}\\main.py*" -f $repo) }
@@ -183,4 +184,29 @@ function Stop-Doctor {
   } catch { Write-Host ('[stop] Doctor stop failed: {0}' -f $_.Exception.Message) }
 }
 # ======= DOCTOR INTEGRATION END =======
+
+# ======= CORE INTEGRATION START (auto-appended v1.0) =======
+function Start-Core {
+  try {
+    $cfg = Join-Path $PSScriptRoot "config\core.yaml"
+    if (-not (Test-Path $cfg)) { return }
+    $yaml = Get-Content $cfg -Raw
+    if ($yaml -notmatch "core01:\s*[\s\S]*enabled:\s*true") { return }
+    $py = Join-Path $PSScriptRoot ".venv\Scripts\python.exe"
+    $exists = Get-CimInstance Win32_Process | Where-Object { $_.CommandLine -like "*dev\core01.py*" }
+    if ($exists) { return }
+    Start-Process -WindowStyle Hidden -FilePath $py -ArgumentList "dev\core01.py" | Out-Null
+    Write-Host "[start] CORE-01 planner started."
+  } catch { Write-Host "[start] CORE start failed: $($_.Exception.Message)" }
+}
+function Stop-Core {
+  try {
+    $procs = Get-CimInstance Win32_Process | Where-Object { $_.CommandLine -like "*dev\core01.py*" }
+    foreach ($p in $procs) { Stop-Process -Id $p.ProcessId -Force -ErrorAction SilentlyContinue }
+    Write-Host "[stop] CORE stopped (if running)."
+  } catch { Write-Host "[stop] CORE stop failed: $($_.Exception.Message)" }
+}
+if ($PSBoundParameters.ContainsKey("Stop") -and $Stop -eq 1) { Stop-Core }
+elseif ($PSBoundParameters.ContainsKey("Background") -and $Background -eq 1) { Start-Core }
+# ======= CORE INTEGRATION END =======
 
