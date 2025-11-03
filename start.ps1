@@ -210,3 +210,14 @@ if ($PSBoundParameters.ContainsKey("Stop") -and $Stop -eq 1) { Stop-Core }
 elseif ($PSBoundParameters.ContainsKey("Background") -and $Background -eq 1) { Start-Core }
 # ======= CORE INTEGRATION END =======
 
+# ======= CORE-04 MT5 PROBE (one-shot on background start) =======
+if ($BackgroundB) {
+  try {
+    $py = Join-Path $PSScriptRoot ".venv\Scripts\python.exe"
+    Start-Process -WindowStyle Hidden -FilePath $py -ArgumentList "dev\core04_mt5.py" | Out-Null
+    Write-Host "[start] CORE-04 MT5 probe dispatched."
+  } catch { Write-Host "[start] CORE-04 dispatch failed: $($_.Exception.Message)" }
+}
+# ======= END CORE-04 =======
+
+
