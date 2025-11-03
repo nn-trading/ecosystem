@@ -46,3 +46,20 @@ def test_log_tool_event_and_artifact_capture(tmp_path):
     # meta is JSON and should include tool name
     meta = json.loads(meta_json) if meta_json else {}
     assert meta.get('tool') == 'x.echo'
+
+
+def test_retrieve_like_fallback_when_fts_empty(tmp_path):
+    db_path = tmp_path / 'logger.db'
+    db = LoggerDB(db_path)
+    # Insert one event with special chars that can confuse FTS syntax
+    db.append_event(agent="Tester", type_="ui/print", payload={"text": "open http://alpha/beta now"})
+    # Ensure FTS index is empty so initial MATCH returns 0 rows
+    try:
+        db.conn.execute("DELETE FROM events_fts")
+        db.conn.commit()
+    except Exception:
+        pass
+    rows = db.retrieve("ui/print", k=10)
+    assert rows, "LIKE fallback should return results when FTS MATCH yields none"
+    assert any(r.get("type") in ("ui/print", "note", None) for r in rows)
+

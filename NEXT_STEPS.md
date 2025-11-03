@@ -9,6 +9,7 @@ Top 5 tasks:
    powershell -NoProfile -File .\\start.ps1 -Headless 0 -Background 0 -RunPytest 1
 4) EventLog triage for warnings/errors
    .\\.venv\\Scripts\\python.exe dev\\eventlog_cli.py search error -n 200
+   Note: CLI search takes positional query; e.g., python dev\\eventlog_cli.py search ui/print
 5) Rotate logs and vacuum if logs grow large
    powershell -NoProfile -File .\\maintain.ps1 -Vacuum 1 -PurgeLogs 1
 
