@@ -53,3 +53,9 @@ config/
 /dev/final_status.ps1
 /dev/oneshot_status.ps1
 
+# Reports directory (local artifacts)
+reports/
+
+# Reports directory (local artifacts)
+reports/
+
