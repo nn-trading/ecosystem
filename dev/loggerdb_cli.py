@@ -62,16 +62,6 @@ def cmd_artifacts(args) -> int:
     return 0
 
 
-def cmd_artifacts(args) -> int:
-    db = LoggerDB()
-    rows = db.recent_artifacts(args.n)
-    if args.output:
-        _write_json_ascii(Path(args.output), rows)
-    else:
-        print(json.dumps(rows, **ASCII_JSON_KW))
-    return 0
-
-
 def cmd_db_path(args) -> int:
     db = LoggerDB()
     info = {"db_path": str(db.path)}
