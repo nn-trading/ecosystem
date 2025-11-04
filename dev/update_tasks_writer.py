@@ -21,6 +21,11 @@ SESSION_PLAN = [
     {"id": "PLAN-CORE", "title": "Finalize prioritized plan for CORE-01 and CORE-03", "status": "done", "notes": "1) CORE-03 observability, then 2) CORE-01 intent+replan"},
     {"id": "CORE-01-Design", "title": "Design for intent detection and replanning", "status": "todo"},
     {"id": "CORE-03-Design", "title": "Design for logger/memory SQLite and summarizer", "status": "todo"},
+    {"id": "TASKS-align", "title": "Unify tasks schema and persist session_tasks via update_tasks_writer.py", "status": "done", "notes": "Merged legacy session->session_tasks and applied SESSION_PLAN"},
+    {"id": "DB-validate", "title": "Validate ECOSYS_* DB env vars and chosen path", "status": "done"},
+    {"id": "DOC-update", "title": "Document DB path behavior, health integration, ASCII-only policy", "status": "todo"},
+    {"id": "GIT-commit", "title": "Stage and commit tasks alignment and ASCII fixes", "status": "todo"},
+    {"id": "summarize-progress", "title": "Write logs/session_status.txt summary (ASCII)", "status": "todo"},
 ]
 
 def read_json(path):
@@ -50,6 +55,14 @@ if __name__ == '__main__':
     if not isinstance(data, dict):
         data = {"tasks": []}
     session_tasks = data.get('session_tasks') or []
+    # Merge legacy 'session' tasks if present
+    try:
+        legacy = (data.get('session') or {}).get('tasks') or []
+        for it in legacy:
+            if isinstance(it, dict):
+                upsert(session_tasks, it)
+    except Exception:
+        pass
     for it in SESSION_PLAN:
         upsert(session_tasks, it)
     data['session_tasks'] = session_tasks

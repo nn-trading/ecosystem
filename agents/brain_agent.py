@@ -4,6 +4,7 @@ import asyncio
 import inspect
 import re
 from typing import Any, Dict, List
+from core.intent import evaluate_success_from_texts, replan_if_needed, parse_intent
 
 OPEN_RX = re.compile(r'\b(?:open|launch|start)\s+([^\s"].+?|\S+)(?:\s+(.*))?$', re.IGNORECASE)
 
@@ -124,6 +125,8 @@ class BrainAgent:
             self._retry_budget_default = 3
         self._retry_counts: dict[str, int] = {}
         self._job_plans: dict[str, Dict[str, Any]] = {}
+        self._job_texts: dict[str, list[str]] = {}
+
 
     def _reset_budget(self, job_id: str | None) -> None:
         try:
@@ -337,6 +340,14 @@ class BrainAgent:
     async def plan(self, msg: Any) -> Dict[str, Any]:
         text = _extract_text(msg)
         plan = self._plan_for_text(text)
+        # CORE-01: derive success criteria from intent text
+        try:
+            intent = parse_intent(text)
+            if getattr(intent, "success", None):
+                plan["success"] = list(intent.success)
+        except Exception:
+            pass
+
         # Determine job ID from incoming message (for tracking across agents)
         job_id = getattr(msg, "job_id", None) or (msg.get("job_id") if isinstance(msg, dict) else None)
         # Persist plan for this job so retries can reuse or modify it
@@ -371,21 +382,12 @@ class BrainAgent:
                 try:
                     job_id = getattr(msg, "job_id", None) or (msg.get("job_id") if isinstance(msg, dict) else None)
                     if not self._inc_and_check_budget(job_id):
-                        # Budget exhausted: emit notice and stop retrying this job
                         try:
-                            await self.bus.publish(
-                                "task/budget_exhausted",
-                                {"job_id": job_id},
-                                sender=self.name, job_id=job_id,
-                            )
+                            await self.bus.publish("task/budget_exhausted", {"job_id": job_id}, sender=self.name, job_id=job_id)
                         except Exception:
                             pass
                         try:
-                            await self.bus.publish(
-                                "ui/print",
-                                {"text": f"{self.name}: retry budget exhausted for job {job_id}"},
-                                sender=self.name, job_id=job_id,
-                            )
+                            await self.bus.publish("ui/print", {"text": f"{self.name}: retry budget exhausted for job {job_id}"}, sender=self.name, job_id=job_id)
                         except Exception:
                             pass
                         return
@@ -397,13 +399,8 @@ class BrainAgent:
                         plan = data.get("plan")
                         feedback = data.get("feedback")
                     if feedback:
-                        await self.bus.publish(
-                            "ui/print",
-                            {"text": f"{self.name}: (Autofix) {feedback}"},
-                            sender=self.name, job_id=job_id,
-                        )
+                        await self.bus.publish("ui/print", {"text": f"{self.name}: (Autofix) {feedback}"}, sender=self.name, job_id=job_id)
                     if plan:
-                        # Persist provided plan for this job for future retries
                         try:
                             jid = str(job_id or "")
                             if jid:
@@ -417,12 +414,67 @@ class BrainAgent:
                 except Exception:
                     pass
 
+            async def _on_task_result(msg: Any) -> None:
+                try:
+                    job_id = getattr(msg, "job_id", None) or (msg.get("job_id") if isinstance(msg, dict) else None)
+                    data = (msg.get("data") if isinstance(msg, dict) else {}) or {}
+                    txt = str(data.get("text") or "")
+                    if job_id:
+                        self._job_texts.setdefault(str(job_id), []).append(txt)
+                except Exception:
+                    pass
+
+            async def _on_worker_done(msg: Any) -> None:
+                try:
+                    job_id = getattr(msg, "job_id", None) or (msg.get("job_id") if isinstance(msg, dict) else None)
+                    jid = str(job_id or "")
+                    data = (msg.get("data") if isinstance(msg, dict) else {}) or {}
+                    plan = None
+                    if isinstance(data, dict):
+                        plan = data.get("plan")
+                    collected = list(self._job_texts.get(jid, []))
+                    success = []
+                    if isinstance(plan, dict):
+                        success = list(plan.get("success") or [])
+                    if not plan and jid in self._job_plans:
+                        plan = self._job_plans.get(jid)
+                        if isinstance(plan, dict):
+                            success = list(plan.get("success") or [])
+                    evaluation = evaluate_success_from_texts(success, collected)
+                    if evaluation.get("ok"):
+                        try:
+                            await self.bus.publish("ui/print", {"text": f"{self.name}: Job {jid} success."}, sender=self.name, job_id=job_id)
+                        except Exception:
+                            pass
+                        try:
+                            if jid in self._job_texts:
+                                del self._job_texts[jid]
+                        except Exception:
+                            pass
+                        return
+                    base_plan = plan or self._job_plans.get(jid) or {}
+                    plan2 = replan_if_needed(base_plan, evaluation)
+                    try:
+                        if jid:
+                            self._job_plans[jid] = plan2
+                    except Exception:
+                        pass
+                    await self.bus.publish("task/retry", {"plan": plan2, "feedback": "evaluation failed"}, sender=self.name, job_id=job_id)
+                except Exception:
+                    pass
+
             r1 = on("task/new", _on_new)
             r2 = on("task/retry", _on_retry)
+            r3 = on("task/result", _on_task_result)
+            r4 = on("worker/done", _on_worker_done)
 
             if inspect.isawaitable(r1):
                 await r1
             if inspect.isawaitable(r2):
                 await r2
+            if inspect.isawaitable(r3):
+                await r3
+            if inspect.isawaitable(r4):
+                await r4
         except Exception:
             return

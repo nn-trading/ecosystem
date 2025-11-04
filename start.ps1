@@ -267,7 +267,7 @@ function Stop-Core {
   } catch { Write-Host "[stop] CORE stop failed: $($_.Exception.Message)" }
 }
 if ($PSBoundParameters.ContainsKey("Stop") -and $Stop -eq 1) { Stop-Core }
-elseif ($PSBoundParameters.ContainsKey("Background") -and $Background -eq 1) { Start-Core }
+else { Start-Core }
 # ======= CORE INTEGRATION END =======
 
 
@@ -294,4 +294,23 @@ function Stop-Tools {
 if ($PSBoundParameters.ContainsKey("Stop") -and $Stop -eq 1) { Stop-Tools }
 elseif ($PSBoundParameters.ContainsKey("Background") -and $Background -eq 1) { Start-Tools }
 # ======= TOOL HOOK END =======
+
+# ======= CHAT ROTATE INTEGRATION START =======
+function Start-ChatRotate {
+  try {
+    $py = Join-Path $PSScriptRoot ".venv\Scripts\python.exe"
+    $exists = Get-CimInstance Win32_Process | Where-Object { $_.CommandLine -like "*dev\chat_rotate.py*" }
+    if (-not $exists) { Start-Process -WindowStyle Hidden -FilePath $py -ArgumentList "dev\chat_rotate.py" | Out-Null }
+    Write-Host "[start] Chat rotate started."
+  } catch { Write-Host "[start] Chat rotate start failed: $($_.Exception.Message)" }
+}
+function Stop-ChatRotate {
+  try {
+    $procs = Get-CimInstance Win32_Process | Where-Object { $_.CommandLine -like "*dev\chat_rotate.py*" }
+    foreach ($p in $procs) { Stop-Process -Id $p.ProcessId -Force -ErrorAction SilentlyContinue }
+    Write-Host "[stop] Chat rotate stopped."
+  } catch { Write-Host "[stop] Chat rotate stop failed: $($_.Exception.Message)" }
+}
+if ($PSBoundParameters.ContainsKey("Stop") -and $Stop -eq 1) { Stop-ChatRotate }
+elseif ($PSBoundParameters.ContainsKey("Background") -and $Background -eq 1) { Start-ChatRotate }
 

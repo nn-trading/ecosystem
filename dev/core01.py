@@ -4,6 +4,7 @@ import os, json, time, subprocess
 from pathlib import Path
 from datetime import datetime
 try:
+    from core.ascii_writer import write_text_ascii, to_ascii
     import httpx
 except Exception:
     httpx = None
@@ -22,8 +23,7 @@ def load_cfg():
     return {}
 
 def write(path:Path, text:str):
-    path.parent.mkdir(parents=True, exist_ok=True)
-    path.write_text(text, encoding="utf-8")
+    write_text_ascii(str(path), text)
 
 def probe_network(url:str, timeout:int)->bool:
     if not httpx: return False
@@ -42,7 +42,7 @@ def ensure_env(vars_):
 def touch(files):
     for f in files:
         Path(f).parent.mkdir(parents=True, exist_ok=True)
-        Path(f).write_text(f"touched {now()}\n", encoding="utf-8")
+        write_text_ascii(str(Path(f)), f"touched {now()}\n")
 
 def plan():
     return [
@@ -89,10 +89,8 @@ def run_loop():
     while time.time()-start<maxrt:
         st=loop_once(cfg); loops+=1
         # Append compact line to snapshot
-        (SNAP/"SUMMARY.txt").write_text(
-            (SNAP/"SUMMARY.txt").read_text(encoding="utf-8")+f"[{now()}] net={st['network_ok']} env={st['env_ok']} touched={st['touched']}\n",
-            encoding="utf-8"
-        )
+        with open(SNAP/"SUMMARY.txt", "a", encoding="ascii", errors="ignore") as f:
+            f.write(to_ascii(f"[{now()}] net={st['network_ok']} env={st['env_ok']} touched={st['touched']}\n"))
         time.sleep(interval)
     write(SNAP/"DONE.txt", f"loops={loops}\n")
     print("CORE-01 READY")

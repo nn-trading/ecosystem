@@ -1,2 +1,2 @@
-name: "EchoAgent"
+name: "echoAgent"
 deps: []

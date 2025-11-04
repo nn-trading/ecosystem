@@ -2,6 +2,8 @@
 from __future__ import annotations
 import time
 from pathlib import Path
+from core.ascii_writer import write_text_ascii
+
 ROOT = Path(__file__).resolve().parents[1]
 INBOX = ROOT/"reports/inbox"
 INBOX_TOOLS = ROOT/"reports/inbox_tools"
@@ -13,10 +15,10 @@ def loop_once()->int:
     n=0
     for p in sorted((ROOT/"specs/generated").glob("*_agent.yaml")):
         q=INBOX/p.name
-        if not q.exists(): q.write_text(p.read_text(encoding="utf-8"), encoding="utf-8"); n+=1
+        if not q.exists(): write_text_ascii(str(q), p.read_text(encoding="utf-8")); n+=1
     for p in sorted((ROOT/"specs/generated").glob("*_tool.yaml")):
         q=INBOX_TOOLS/p.name
-        if not q.exists(): q.write_text(p.read_text(encoding="utf-8"), encoding="utf-8"); n+=1
+        if not q.exists(): write_text_ascii(str(q), p.read_text(encoding="utf-8")); n+=1
     return n
 
 def main():
