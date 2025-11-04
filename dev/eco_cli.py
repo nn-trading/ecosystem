@@ -48,7 +48,7 @@ def main():
             r = run([PY, str(EV), "search", term, "-n", n]); print(r.stdout); return
         if cmd == "log-tail":
             n = sys.argv[2] if len(sys.argv) > 2 else "200"
-            r = run([PY, str(EV), "tail", "-n", n]); print(r.stdout); return
+            r = run([PY, str(EV), "recent", "-n", n]); print(r.stdout); return
 
     if cmd.startswith("db-"):
         ensure(DB, "db_cli")
