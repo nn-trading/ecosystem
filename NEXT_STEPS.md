@@ -7,11 +7,11 @@ Top 5 tasks:
    powershell -NoProfile -File .\\start.ps1 -Headless 1 -Background 0 -StopAfterSec 60 -RunPytest 0
 3) Full test run and capture report
    powershell -NoProfile -File .\\start.ps1 -Headless 0 -Background 0 -RunPytest 1
-4) EventLog triage for warnings/errors
-   .\\.venv\\Scripts\\python.exe dev\\eventlog_cli.py search error -n 200
-   Note: CLI search takes positional query; e.g., python dev\\eventlog_cli.py search ui/print
-5) Rotate logs and vacuum if logs grow large
-   powershell -NoProfile -File .\\maintain.ps1 -Vacuum 1 -PurgeLogs 1
+4) EventLog triage for warnings/errors and heartbeats
+   .\\.venv\\Scripts\\python.exe dev\\eventlog_cli.py search error
+   .\\.venv\\Scripts\\python.exe dev\\eventlog_cli.py search topic:core/tools_watch
+5) Maintenance (vacuum only; no log purge)
+   powershell -NoProfile -File .\\maintain.ps1 -Vacuum 1 -PurgeLogs 0
 
 Blockers (if any):
 - Missing OPENAI_API_KEY: False
