@@ -6,6 +6,19 @@ from pathlib import Path
 from typing import Dict, Any, List, Tuple, Optional
 
 import os
+
+# Safe LIKE/FTS helpers
+try:
+    from dev.search_escape import like_pattern, quote_fts  # type: ignore
+except Exception:
+    def quote_fts(term: str) -> str:
+        s = str(term)
+        return '"' + s.replace('"', '""') + '"'
+    def like_pattern(term: str, escape_char: str = '\\'):
+        s = str(term).replace(escape_char, escape_char + escape_char)
+        s = s.replace('%', escape_char + '%').replace('_', escape_char + '_')
+        return f"%{s}%", escape_char
+
 # Resolve DB path at runtime so tests or runtime can override via ECOSYS_LOGGER_DB or ECOSYS_MEMORY_DB.
 def _default_db_path() -> Path:
     p = os.environ.get("ECOSYS_LOGGER_DB") or os.environ.get("ECOSYS_MEMORY_DB")
@@ -43,6 +56,11 @@ CREATE TABLE IF NOT EXISTS meta (
     key TEXT PRIMARY KEY,
     value TEXT
 );
+
+-- CORE-03: pragmatic indexes and meta version
+CREATE INDEX IF NOT EXISTS idx_events_topic_ts ON events(topic, ts);
+CREATE INDEX IF NOT EXISTS idx_events_ts ON events(ts);
+PRAGMA user_version=3;
 """
 
 FTS_SQL = """
@@ -201,7 +219,20 @@ class EventLog:
     def search(self, query: str, limit: int = 100) -> List[Dict[str, Any]]:
         out: List[Dict[str, Any]] = []
         records: List[tuple] = []
-        # Prefer FTS when available, but be robust to syntax errors and special characters
+
+        def _strip_quotes(s: str) -> str:
+            s = str(s).strip()
+            if len(s) >= 2 and s[0] == s[-1] and s[0] in ("'", '"'):
+                return s[1:-1]
+            return s
+
+        q_norm = _strip_quotes(query)
+        # Precompute LIKE patterns: one for plain text, one for JSON-escaped backslashes
+        like1, _ = like_pattern(q_norm)
+        like2 = like1
+        if "\\" in q_norm:
+            like2, _ = like_pattern(q_norm.replace("\\", "\\\\"))
+
         if self.fts_ready:
             fts_sql = (
                 """
@@ -217,7 +248,20 @@ class EventLog:
                 """
                 SELECT id, ts, topic, sender, payload_json
                 FROM events
-                WHERE (payload_json LIKE ? OR topic LIKE ?)
+                WHERE (
+                  payload_json LIKE ? ESCAPE '\\' OR
+                  payload_json LIKE ? ESCAPE '\\' OR
+                  topic LIKE ? ESCAPE '\\'
+                )
+                ORDER BY id DESC
+                LIMIT ?
+                """
+            )
+            topic_like_sql = (
+                """
+                SELECT id, ts, topic, sender, payload_json
+                FROM events
+                WHERE topic LIKE ? ESCAPE '\\'
                 ORDER BY id DESC
                 LIMIT ?
                 """
@@ -232,27 +276,39 @@ class EventLog:
                     cur = self.conn.execute(fts_sql, (q, limit))
                     records = cur.fetchall()
                 except Exception:
-                    like = f"%{query}%"
-                    cur = self.conn.execute(like_sql, (like, like, limit))
+                    cur = self.conn.execute(like_sql, (like1, like2, like1, limit))
                     records = cur.fetchall()
             # If FTS succeeded but returned nothing and the query looks like a topic or contains specials,
-            # try a LIKE search that also matches topic
-            if not records and ("/" in str(query) or ":" in str(query) or " " in str(query)):
-                like = f"%{query}%"
-                cur = self.conn.execute(like_sql, (like, like, limit))
+            # try targeted LIKEs
+            if not records:
+                if q_norm.startswith("topic:"):
+                    val = q_norm[len("topic:") :]
+                    like_t, _ = like_pattern(val)
+                    cur = self.conn.execute(topic_like_sql, (like_t, limit))
+                    records = cur.fetchall()
+                elif q_norm.startswith("topic="):
+                    val = q_norm[len("topic=") :]
+                    like_t, _ = like_pattern(val)
+                    cur = self.conn.execute(topic_like_sql, (like_t, limit))
+                    records = cur.fetchall()
+            if not records and ("/" in q_norm or ":" in q_norm or " " in q_norm or q_norm != query):
+                cur = self.conn.execute(like_sql, (like1, like2, like1, limit))
                 records = cur.fetchall()
         else:
             like_sql = (
                 """
                 SELECT id, ts, topic, sender, payload_json
                 FROM events
-                WHERE (payload_json LIKE ? OR topic LIKE ?)
+                WHERE (
+                  payload_json LIKE ? ESCAPE '\\' OR
+                  payload_json LIKE ? ESCAPE '\\' OR
+                  topic LIKE ? ESCAPE '\\'
+                )
                 ORDER BY id DESC
                 LIMIT ?
                 """
             )
-            like = f"%{query}%"
-            cur = self.conn.execute(like_sql, (like, like, limit))
+            cur = self.conn.execute(like_sql, (like1, like2, like1, limit))
             records = cur.fetchall()
 
         for (eid, ts, topic, sender, pj) in records:
