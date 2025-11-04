@@ -61,6 +61,7 @@ if ($StopB) {
   }
   try { Stop-Doctor } catch {}
   try { Stop-Core } catch {}
+  try { Stop-Tools } catch {}
   # Kill any stray main.py processes launched from this repo (not tracked by pid files)
   try {
     $procs = Get-CimInstance Win32_Process | Where-Object { $_.CommandLine -like ("*{0}\\main.py*" -f $repo) }
@@ -194,24 +195,74 @@ function Stop-Doctor {
 }
 # ======= DOCTOR INTEGRATION END =======
 
-# ======= CORE INTEGRATION START (auto-appended v1.0) =======
+# ======= CHAT MEMORY INTEGRATION START =======
+function Start-ChatMemory {
+  try {
+    $cfg = Join-Path $PSScriptRoot 'config/chat_memory.yaml'
+    if (-not (Test-Path $cfg)) { return }
+    $py = Join-Path $PSScriptRoot '.venv/Scripts/python.exe'
+    if (-not (Test-Path $py)) { $py = (Get-Command python -ErrorAction SilentlyContinue | Select-Object -First 1).Source }
+    if (-not $py) { $py = 'python' }
+    $exists = Get-CimInstance Win32_Process | Where-Object { $_.CommandLine -like '*dev\chat_summarizer.py*' }
+    if ($exists) { return }
+    Start-Process -WindowStyle Hidden -FilePath $py -ArgumentList 'dev\chat_summarizer.py','loop' -WorkingDirectory $PSScriptRoot | Out-Null
+    Write-Host '[start] Chat summarizer started.'
+  } catch { Write-Host ('[start] Chat summarizer start failed: {0}' -f $_.Exception.Message) }
+}
+function Stop-ChatMemory {
+  try {
+    $procs = Get-CimInstance Win32_Process | Where-Object { $_.CommandLine -like '*dev\chat_summarizer.py*' }
+    foreach ($p in $procs) { Stop-Process -Id $p.ProcessId -Force -ErrorAction SilentlyContinue }
+    Write-Host '[stop] Chat summarizer stopped (if running).'
+  } catch { Write-Host ('[stop] Chat summarizer stop failed: {0}' -f $_.Exception.Message) }
+}
+if ($PSBoundParameters.ContainsKey('Stop') -and $Stop -eq 1) { Stop-ChatMemory }
+elseif ($PSBoundParameters.ContainsKey('Background') -and $Background -eq 1) { Start-ChatMemory }
+# ======= CHAT MEMORY INTEGRATION END =======
+
+
+# ======= CORE INTEGRATION START (auto-appended v1.1) =======
 function Start-Core {
   try {
     $cfg = Join-Path $PSScriptRoot "config\core.yaml"
     if (-not (Test-Path $cfg)) { return }
     $yaml = Get-Content $cfg -Raw
-    if ($yaml -notmatch "core01:\s*[\s\S]*enabled:\s*true") { return }
     $py = Join-Path $PSScriptRoot ".venv\Scripts\python.exe"
-    $exists = Get-CimInstance Win32_Process | Where-Object { $_.CommandLine -like "*dev\core01.py*" }
-    if ($exists) { return }
-    Start-Process -WindowStyle Hidden -FilePath $py -ArgumentList "dev\core01.py" | Out-Null
-    Write-Host "[start] CORE-01 planner started."
+    if (-not (Test-Path $py)) { $py = (Get-Command python -ErrorAction SilentlyContinue | Select-Object -First 1).Source }
+    if (-not $py) { $py = 'python' }
+
+    # CORE-01 intent loop
+    if ($yaml -match "core01:\s*[\s\S]*enabled:\s*true") {
+      $exists = Get-CimInstance Win32_Process | Where-Object { $_.CommandLine -like "*dev\core01_intent.py*" }
+      if (-not $exists) {
+        Start-Process -WindowStyle Hidden -FilePath $py -ArgumentList "dev\core01_intent.py","loop" -WorkingDirectory $PSScriptRoot | Out-Null
+        Write-Host "[start] CORE-01 intent loop started."
+      }
+    }
+
+    # CORE-02 planner and inbox loops
+    if ($yaml -match "core02:\s*[\s\S]*enabled:\s*true") {
+      $exists2 = Get-CimInstance Win32_Process | Where-Object { $_.CommandLine -like "*dev\core02_planner.py*" }
+      if (-not $exists2) {
+        Start-Process -WindowStyle Hidden -FilePath $py -ArgumentList "dev\core02_planner.py","loop" -WorkingDirectory $PSScriptRoot | Out-Null
+        Write-Host "[start] CORE-02 planner loop started."
+      }
+      $exists3 = Get-CimInstance Win32_Process | Where-Object { $_.CommandLine -like "*dev\core02_inbox.py*" }
+      if (-not $exists3) {
+        Start-Process -WindowStyle Hidden -FilePath $py -ArgumentList "dev\core02_inbox.py","loop" -WorkingDirectory $PSScriptRoot | Out-Null
+        Write-Host "[start] CORE-02 inbox loop started."
+      }
+    }
   } catch { Write-Host "[start] CORE start failed: $($_.Exception.Message)" }
 }
 function Stop-Core {
   try {
-    $procs = Get-CimInstance Win32_Process | Where-Object { $_.CommandLine -like "*dev\core01.py*" }
-    foreach ($p in $procs) { Stop-Process -Id $p.ProcessId -Force -ErrorAction SilentlyContinue }
+    $p1 = Get-CimInstance Win32_Process | Where-Object { $_.CommandLine -like "*dev\core01_intent.py*" }
+    foreach ($p in $p1) { Stop-Process -Id $p.ProcessId -Force -ErrorAction SilentlyContinue }
+    $p2 = Get-CimInstance Win32_Process | Where-Object { $_.CommandLine -like "*dev\core02_planner.py*" }
+    foreach ($p in $p2) { Stop-Process -Id $p.ProcessId -Force -ErrorAction SilentlyContinue }
+    $p3 = Get-CimInstance Win32_Process | Where-Object { $_.CommandLine -like "*dev\core02_inbox.py*" }
+    foreach ($p in $p3) { Stop-Process -Id $p.ProcessId -Force -ErrorAction SilentlyContinue }
     Write-Host "[stop] CORE stopped (if running)."
   } catch { Write-Host "[stop] CORE stop failed: $($_.Exception.Message)" }
 }
@@ -229,7 +280,7 @@ function Start-Tools {
     if (-not $py) { $py = 'python' }
     $exists = Get-CimInstance Win32_Process | Where-Object { $_.CommandLine -like '*dev\core02_tools_watch.py*' }
     if ($exists) { return }
-    Start-Process -WindowStyle Hidden -FilePath $py -ArgumentList "dev\core02_tools_watch.py" -WorkingDirectory $PSScriptRoot | Out-Null
+    Start-Process -WindowStyle Hidden -FilePath $py -ArgumentList "dev\core02_tools_watch.py","loop" -WorkingDirectory $PSScriptRoot | Out-Null
     Write-Host '[start] Tools watcher started.'
   } catch { Write-Host ('[start] Tools watcher start failed: {0}' -f $_.Exception.Message) }
 }

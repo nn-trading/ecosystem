@@ -1,0 +1,10 @@
+from __future__ import annotations
+from agents.base_agent import BaseAgent
+
+class ${ClassName}(BaseAgent):
+    async def run(self):
+        await self._emit("[${Name}] online.")
+        async for env in self.bus.subscribe("${QueueIn}"):
+            msg = (env.payload.get("text") or "").strip()
+            if not msg: continue
+            await self._emit(f"[${Name}] echo: {msg}")
