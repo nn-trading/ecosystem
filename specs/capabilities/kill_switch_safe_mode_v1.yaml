@@ -1,0 +1,9 @@
+name: Kill_Switch_Safe_Mode_v1
+kind: capability
+version: 1
+status: proposed
+goals:
+  - Immediate stop, safe-mode scoped permissions, audit breadcrumb
+acceptance:
+  - "hotkey_kill_switch: PASS"
+  - "safe_mode_scopes_enforced: PASS"

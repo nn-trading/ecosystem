@@ -1,0 +1,9 @@
+name: Performance_Pack_v1
+kind: capability
+version: 1
+status: proposed
+goals:
+  - WAL mode, busy_timeout, snapshot GC, token/cost governor
+acceptance:
+  - "db_wal_and_busy_timeout_applied: PASS"
+  - "cost_cap_enforced_soft: PASS"

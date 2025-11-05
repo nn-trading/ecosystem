@@ -1,0 +1,9 @@
+name: Event_Bus_v1
+kind: capability
+version: 1
+status: proposed
+goals:
+  - Local event bus for agents (file/zmq/redis-lite selectable)
+acceptance:
+  - "publish_subscribe_loopback: PASS"
+  - "fallback_to_filebus_when_unavailable: PASS"

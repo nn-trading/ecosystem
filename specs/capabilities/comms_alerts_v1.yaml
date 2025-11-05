@@ -1,0 +1,36 @@
+param()
+# dev/maxcap_finalize.ps1  ASCII-only, idempotent
+
+# 0) Env + dirs
+$env:PYTHONUTF8='1'; $env:PYTHONIOENCODING='utf-8'; $env:LOG_LEVEL='DEBUG'
+New-Item -ItemType Directory -Force -Path .\logs, .\runs, .\reports, .\specs\capabilities | Out-Null
+$py = '.\.venv\Scripts\python.exe'; if (-not (Test-Path $py)) { $py = 'python' }
+
+# 1) Wait up to 300s for bring-up to finish (non-blocking)
+$deadline = (Get-Date).AddSeconds(300)
+while ($true) {
+  $bu = Get-CimInstance Win32_Process | Where-Object { $_.Name -match 'powershell' -and $_.CommandLine -match 'dev\\one_shot_bringup.ps1' }
+  if (-not $bu) { break }
+  if ((Get-Date) -gt $deadline) { break }
+  Start-Sleep -Seconds 3
+}
+
+# 2) Kill only stuck jobs_queue loops
+Get-CimInstance Win32_Process | Where-Object { $_.Name -match 'python.exe' -and $_.CommandLine -match 'from dev import jobs_queue' } | ForEach-Object {
+  try { Stop-Process -Id $_.ProcessId -Force } catch {}
+}
+
+# 3) Seed super-upgrade capability specs (no hard-coding; specs guide planner)
+if (-not (Test-Path 'specs\capabilities\comms_alerts_v1.yaml')) {
+@'
+name: Comms_Alerts_v1
+kind: capability
+version: 1
+status: proposed
+goals:
+  - Local notifications and webhook/Telegram/Discord alerts
+constraints:
+  - No hard-coding; use agent-factory path (spec->plan->tests->code->demo)
+acceptance:
+  - "send_local_notification: PASS"
+  - "post_webhook_message: PASS"

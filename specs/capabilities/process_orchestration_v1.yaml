@@ -1,0 +1,9 @@
+name: Process_Orchestration_v1
+kind: capability
+version: 1
+status: proposed
+goals:
+  - PID tracking, graceful termination, elevated restart, app profiles
+acceptance:
+  - "launch_profile(MT5|Browser|Excel): PASS"
+  - "restart_elevated_if_needed: PASS"
