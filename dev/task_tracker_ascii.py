@@ -6,6 +6,12 @@ ROOT=Path(__file__).resolve().parents[1]
 TASKS=ROOT/"logs/tasks.json"
 OUT1=ROOT/"reports/TASKS_ASCII.md"
 
+# Optional redaction to avoid leaking secrets in task notes/titles
+try:
+    from dev.redact import sanitize as redact_s
+except Exception:
+    def redact_s(s: str) -> str: return s
+
 def to_ascii(s:str)->str: return s.encode("ascii","ignore").decode("ascii")
 def safe(obj): return to_ascii(json.dumps(obj, ensure_ascii=True, indent=2))
 
@@ -33,7 +39,9 @@ def write_ascii_tasks():
         else:
             lines.append(f"- {x}")
     OUT1.parent.mkdir(parents=True,exist_ok=True)
-    OUT1.write_text("\n".join(lines), encoding="utf-8")
+    out_text = "\n".join(lines)
+    out_text = to_ascii(redact_s(out_text))
+    OUT1.write_text(out_text, encoding="utf-8")
 
     # Best-effort: sanitize any existing sessions/*/TASKS.md in place
     sess_root=ROOT/"sessions"
@@ -41,7 +49,7 @@ def write_ascii_tasks():
         for p in sess_root.rglob("TASKS.md"):
             try:
                 raw=p.read_text(encoding="utf-8",errors="ignore")
-                p.write_text(to_ascii(raw), encoding="utf-8")
+                p.write_text(to_ascii(redact_s(raw)), encoding="utf-8")
             except Exception: pass
 
 if __name__=="__main__":

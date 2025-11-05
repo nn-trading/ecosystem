@@ -130,6 +130,7 @@ $envParts = @(
   'set MEM_ROTATE_SEC=' + $MemRotateSec,
   'set ECOSYS_REPO_ROOT=' + $repo,
   'set ECOSYS_MEMORY_DB=' + $eventsDb,
+  'set ECOSYS_LOGGER_DB=' + $eventsDb,
   'set ASSISTANT_LOG_DIR=' + $logs,
   'set ECOSYS_ASSISTANT_LOG_DIR=' + $logs,
   'set ENABLE_JSONL_RECORDER=0',
@@ -313,4 +314,48 @@ function Stop-ChatRotate {
 }
 if ($PSBoundParameters.ContainsKey("Stop") -and $Stop -eq 1) { Stop-ChatRotate }
 elseif ($PSBoundParameters.ContainsKey("Background") -and $Background -eq 1) { Start-ChatRotate }
+
+
+# ======= JOBS WORKER INTEGRATION START =======
+function Start-JobsWorker {
+  try {
+    $py = Join-Path $PSScriptRoot ".venv\Scripts\python.exe"
+    if (-not (Test-Path $py)) { $py = (Get-Command python -ErrorAction SilentlyContinue | Select-Object -First 1).Source }
+    if (-not $py) { $py = 'python' }
+    $logs = Join-Path $PSScriptRoot 'logs'
+    New-Item -ItemType Directory -Force -Path $logs | Out-Null
+    $pidFile = Join-Path $logs 'jobs_pid.txt'
+    if (Test-Path $pidFile) {
+      try {
+        $pid = Get-Content $pidFile | Select-Object -First 1
+        if ($pid) {
+          $p = Get-Process -Id $pid -ErrorAction SilentlyContinue
+          if ($p) { return }
+        }
+      } catch {}
+      try { Remove-Item $pidFile -ErrorAction SilentlyContinue } catch {}
+    }
+    $args = @('dev\jobs_queue.py','run','--loop','--interval','5')
+    $p = Start-Process -FilePath $py -ArgumentList $args -WorkingDirectory $PSScriptRoot -WindowStyle Hidden -PassThru
+    if ($p -and $p.Id) { Set-Content -Path $pidFile -Value $p.Id }
+    Write-Host '[start] JobsWorker started.'
+  } catch { Write-Host ('[start] JobsWorker start failed: {0}' -f $_.Exception.Message) }
+}
+function Stop-JobsWorker {
+  try {
+    $logs = Join-Path $PSScriptRoot 'logs'
+    $pidFile = Join-Path $logs 'jobs_pid.txt'
+    if (Test-Path $pidFile) {
+      $pid = Get-Content $pidFile | Select-Object -First 1
+      if ($pid) { Stop-Process -Id $pid -Force -ErrorAction SilentlyContinue }
+      try { Remove-Item $pidFile -ErrorAction SilentlyContinue } catch {}
+    }
+    $procs = Get-CimInstance Win32_Process | Where-Object { $_.CommandLine -like '*dev\jobs_queue.py*' }
+    foreach ($p in $procs) { Stop-Process -Id $p.ProcessId -Force -ErrorAction SilentlyContinue }
+    Write-Host '[stop] JobsWorker stopped (if running).'
+  } catch { Write-Host ('[stop] JobsWorker stop failed: {0}' -f $_.Exception.Message) }
+}
+if ($PSBoundParameters.ContainsKey('Stop') -and $Stop -eq 1) { Stop-JobsWorker }
+elseif ($PSBoundParameters.ContainsKey('Background') -and $Background -eq 1) { Start-JobsWorker }
+# ======= JOBS WORKER INTEGRATION END =======
 

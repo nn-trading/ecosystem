@@ -28,8 +28,15 @@ def pick_one():
         c.row_factory=sqlite3.Row
         r=c.execute("SELECT * FROM jobs WHERE status='pending' ORDER BY id ASC LIMIT 1").fetchone()
         if not r: return None
-        c.execute("UPDATE jobs SET status='running', tries=tries+1 WHERE id=?",(r["id"],)); c.commit()
-        return dict(r)
+        c.execute("UPDATE jobs SET status='running', tries=tries+1 WHERE id=?",(r["id"],));
+        c.commit()
+        d = dict(r)
+        d["status"] = "running"
+        try:
+            d["tries"] = int(d.get("tries", 0)) + 1
+        except Exception:
+            d["tries"] = (d.get("tries") or 0) + 1
+        return d
 
 def complete(id:int, ok:bool, err:str|None):
     with sqlite3.connect(DB) as c:
