@@ -56,7 +56,7 @@ Smoke: 60s background run completed; stdout captured to runs\current\smoke_60s.t
 Smoke-direct: 60s foreground run captured to runs\current\smoke_60s_direct.txt; summary no matches
 Smoke-fg: attempt blocked by harness; use smoke_60s_direct.txt as substitute; re-run with longer timeout if needed
 
-EventLog: snapshot at runs\20251102-142843 (stats/recent/top_topics); Total events: 63957; Top topic: system/heartbeat
+EventLog: snapshot at runs\20251105-125921 (stats/recent/top_topics); Total events: 114760; Top topic: system/heartbeat
 Artifacts: runs\current\smoke_60s.txt, runs\current\smoke_60s_direct.txt, runs\current\eventlog_recent.json, ops_log updated
 Next actions: CORE-01-Parser-Impl; CORE-03-Schema-Finalize; CORE-03-Search-Escapes; DOC-next-steps
 
@@ -75,3 +75,8 @@ PR: refs/pull/1/head -> feature/loggerdb-cli (local bare remote)
 PR summary: C:\bots\reports\PR_1.txt
 Push summary: C:\bots\reports\bringup_push_summary.txt
 
+
+Recent run: 20251105_123840
+Pytest: 4 passed, 1 warning in 0.31s
+Smoke: headless foreground run completed
+Artifacts: reports and out under C:\bots
