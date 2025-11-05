@@ -4,6 +4,14 @@ import sqlite3, json, time, subprocess, argparse, os, sys, shutil
 from pathlib import Path
 ROOT=Path(__file__).resolve().parents[1]
 DB=ROOT/"var/jobs.db"
+LOG_DIR=ROOT/"logs/jobs"
+
+def to_ascii(s:str)->str:
+    try:
+        return (s or "").encode("ascii","ignore").decode("ascii")
+    except Exception:
+        return ""
+
 PY=str((ROOT/".venv/Scripts/python.exe").resolve())
 if not os.path.exists(PY):
     py_cmd = shutil.which("python") or shutil.which("py")
@@ -44,11 +52,20 @@ def pick_one():
 def complete(id:int, ok:bool, err:str|None):
     with sqlite3.connect(DB) as c:
         c.execute("UPDATE jobs SET status=?, last_error=? WHERE id=?",
-                  ("done" if ok else "failed", (err or "")[:500], id))
+                  ("done" if ok else "failed", to_ascii((err or "")[:500]), id))
+        c.commit()
+
+
+def retry(id:int, err:str|None):
+    e = to_ascii((err or "")[:500])
+    with sqlite3.connect(DB) as c:
+        c.execute("UPDATE jobs SET status='pending', last_error=? WHERE id=?", (e, id))
         c.commit()
 
 def do_job(j):
     kind=j["kind"]; payload=json.loads(j.get("payload") or "{}")
+    LOG_DIR.mkdir(parents=True, exist_ok=True)
+    log_path = LOG_DIR / f"job_{j['id']}.log"
     def run(args):
         return subprocess.run(args, capture_output=True, text=True, cwd=str(ROOT))
     try:
@@ -57,17 +74,28 @@ def do_job(j):
             run([PY,"dev/chatops_cli.py", msg])
             r=run([PY,"dev/core02_planner.py","apply"])
             ok=(r.returncode==0)
-            return ok, r.stdout[-1000:]
+            log_path.write_text(to_ascii((r.stdout or "") + "\n" + (r.stderr or ""))[:5000], encoding="utf-8")
+            return ok, to_ascii(r.stdout)[-1000:]
         if kind=="rollup_chat":
-            r=run([PY,"dev/chat_summarizer.py"]); return (r.returncode==0), r.stdout[-1000:]
+            r=run([PY,"dev/chat_summarizer.py"])
+            log_path.write_text(to_ascii((r.stdout or "") + "\n" + (r.stderr or ""))[:5000], encoding="utf-8")
+            return (r.returncode==0), to_ascii(r.stdout)[-1000:]
         if kind=="snapshot":
-            r=run([PY,"dev/loggerdb_cli.py","snapshot-run","-n","200"]); return (r.returncode==0), r.stdout[-1000:]
+            r=run([PY,"dev/loggerdb_cli.py","snapshot-run","-n","200"])
+            log_path.write_text(to_ascii((r.stdout or "") + "\n" + (r.stderr or ""))[:5000], encoding="utf-8")
+            return (r.returncode==0), to_ascii(r.stdout)[-1000:]
         if kind=="db_vacuum":
-            r=run([PY,"dev/db_cli.py","vacuum"]); return (r.returncode==0), r.stdout[-1000:]
+            r=run([PY,"dev/db_cli.py","vacuum"])
+            log_path.write_text(to_ascii((r.stdout or "") + "\n" + (r.stderr or ""))[:5000], encoding="utf-8")
+            return (r.returncode==0), to_ascii(r.stdout)[-1000:]
         if kind=="status":
-            r=run([PY,"dev/obs_cli.py","stats"]); return (r.returncode==0), r.stdout[-1000:]
+            r=run([PY,"dev/obs_cli.py","stats"])
+            log_path.write_text(to_ascii((r.stdout or "") + "\n" + (r.stderr or ""))[:5000], encoding="utf-8")
+            return (r.returncode==0), to_ascii(r.stdout)[-1000:]
+        log_path.write_text(f"unknown kind: {kind}", encoding="utf-8")
         return False, f"unknown kind: {kind}"
     except Exception as e:
+        log_path.write_text(to_ascii(str(e)), encoding="utf-8")
         return False, str(e)
 
 def loop(interval:int=5, max_tries:int=3):
@@ -76,15 +104,25 @@ def loop(interval:int=5, max_tries:int=3):
         j=pick_one()
         if not j:
             time.sleep(interval); continue
-        ok=False; err=None
+        ok=False; err=None; msg=None
         try:
             ok, msg = do_job(j)
         except Exception as e:
             ok=False; err=str(e)
-        if not ok and (j.get("tries",0)>=max_tries):
-            complete(j["id"], False, err or "max_tries")
+        err_msg = to_ascii(((err or msg) or "")[:500])
+        if ok:
+            complete(j["id"], True, "")
         else:
-            complete(j["id"], ok, err or "")
+            if j.get("tries",0) >= max_tries:
+                complete(j["id"], False, err_msg or "max_tries")
+            else:
+                retry(j["id"], err_msg or "retry")
+                # simple backoff based on tries
+                try:
+                    delay = min(60, 2 ** max(0, int(j.get("tries",1))-1))
+                except Exception:
+                    delay = 1
+                time.sleep(delay)
         time.sleep(0.5)
 
 def list_jobs():

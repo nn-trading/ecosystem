@@ -25,19 +25,35 @@ def write_ascii_tasks():
     lines=[]
     lines.append("# TASKS (ASCII)")
     lines.append("## Global")
+    # Build map of global task statuses by id to align session view
+    gmap={}
     if isinstance(globs, dict):
         for k,v in globs.items():
             status=v.get("status") if isinstance(v,dict) else v
-            lines.append(f"- {k}: {status}")
+            title=v.get("title","") if isinstance(v,dict) else ""
+            gmap[k] = {"status": status, "title": title}
+            lines.append(f"- {k}: {status} - {title}")
     elif isinstance(globs, list):
-        for x in globs: lines.append(f"- {x}")
+        for x in globs:
+            if isinstance(x, dict):
+                k=x.get("id","?"); status=x.get("status","?"); title=x.get("title","")
+                gmap[k] = {"status": status, "title": title}
+                lines.append(f"- {k}: {status} - {title}")
+            else:
+                lines.append(f"- {x}")
     lines.append("")
     lines.append("## Session")
     for x in sess:
         if isinstance(x, dict):
-            lines.append(f"- {x.get('id','?')}: {x.get('status','?')} - {x.get('title','')}")
+            kid=x.get('id','?'); status=x.get('status','?'); title=x.get('title','') or ''
+            if kid in gmap:
+                status = gmap[kid].get('status', status) or status
+                if not title:
+                    title = gmap[kid].get('title','') or title
+            lines.append(f"- {kid}: {status} - {title}")
         else:
-            lines.append(f"- {x}")
+            s=str(x)
+            lines.append(f"- {s}")
     OUT1.parent.mkdir(parents=True,exist_ok=True)
     out_text = "\n".join(lines)
     out_text = to_ascii(redact_s(out_text))
