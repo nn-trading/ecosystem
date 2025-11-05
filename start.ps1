@@ -118,6 +118,64 @@ try {
   }
 } catch { Write-Host "[start] Pre-start maintenance error: $($_.Exception.Message)" }
 
+# ======= UIA PROBE HOOK START =======
+function Start-UIAProbe {
+  try {
+    $py = Join-Path $PSScriptRoot '.venv\Scripts\python.exe'
+    if (-not (Test-Path $py)) { $py = (Get-Command python -ErrorAction SilentlyContinue | Select-Object -First 1).Source }
+    if (-not $py) { $py = 'python' }
+    $exists = Get-CimInstance Win32_Process | Where-Object { $_.CommandLine -like '*dev\uia_probe.py*' }
+    if ($exists) { return }
+    Start-Process -WindowStyle Hidden -FilePath $py -ArgumentList 'dev\uia_probe.py' -WorkingDirectory $PSScriptRoot | Out-Null
+    Write-Host '[start] UIA probe started.'
+  } catch { Write-Host ('[start] UIA probe start failed: {0}' -f $_.Exception.Message) }
+}
+function Stop-UIAProbe {
+  try {
+    $procs = Get-CimInstance Win32_Process | Where-Object { $_.CommandLine -like '*dev\uia_probe.py*' }
+    foreach ($p in $procs) { Stop-Process -Id $p.ProcessId -Force -ErrorAction SilentlyContinue }
+    Write-Host '[stop] UIA probe stopped (if running).'
+  } catch { Write-Host ('[stop] UIA probe stop failed: {0}' -f $_.Exception.Message) }
+}
+# ======= UIA PROBE HOOK END =======
+if ($PSBoundParameters.ContainsKey('Stop') -and $Stop -eq 1) { Stop-UIAProbe } elseif ($PSBoundParameters.ContainsKey('Background') -and $Background -eq 1) { Start-UIAProbe }
+
+
+# ======= DASHBOARD HOOK START =======
+function Start-Dashboard {
+  try {
+    $py = Find-Python -preferred $PythonExe
+    $log = Join-Path $logs 'dashboard.out'
+    $pidFile = Join-Path $logs 'dashboard_pid.txt'
+    $cmd = @($py, (Join-Path $repo 'dev/dashboard_server.py'))
+    $p = Start-Process -FilePath $cmd[0] -ArgumentList $cmd[1] -PassThru -WindowStyle Hidden -WorkingDirectory $repo -RedirectStandardOutput $log -RedirectStandardError $log
+    if ($p -and $p.Id) { Set-Content -Path $pidFile -Value $p.Id }
+    Write-Host '[start] Dashboard started.'
+  } catch { Write-Host ('[start] Dashboard start failed: {0}' -f $_.Exception.Message) }
+}
+function Stop-Dashboard {
+  try {
+    $pidFile = Join-Path $logs 'dashboard_pid.txt'
+    if (Test-Path $pidFile) {
+      $pid = Get-Content $pidFile | Select-Object -First 1
+      if ($pid) { Stop-Process -Id $pid -Force -ErrorAction SilentlyContinue }
+      try { Remove-Item $pidFile -ErrorAction SilentlyContinue } catch {}
+    }
+    $procs = Get-CimInstance Win32_Process | Where-Object { $_.CommandLine -like '*dev\dashboard_server.py*' }
+    foreach ($p in $procs) { Stop-Process -Id $p.ProcessId -Force -ErrorAction SilentlyContinue }
+    Write-Host '[stop] Dashboard stopped (if running).'
+  } catch { Write-Host ('[stop] Dashboard stop failed: {0}' -f $_.Exception.Message) }
+}
+# ======= DASHBOARD HOOK END =======
+if ($PSBoundParameters.ContainsKey('Stop') -and $Stop -eq 1) { Stop-Dashboard } elseif ($PSBoundParameters.ContainsKey('Background') -and $Background -eq 1) { Start-Dashboard }
+
+
+
+
+
+
+
+
 # Build command line with per-process environment via cmd /c
 # Resolve a unified SQLite EventLog path for all agents/tools
 $eventsDb = Join-Path (Join-Path $repo 'var') 'events.db'
