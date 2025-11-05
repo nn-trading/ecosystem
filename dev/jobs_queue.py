@@ -1,10 +1,13 @@
 # dev/jobs_queue.py
 from __future__ import annotations
-import sqlite3, json, time, subprocess, argparse, os
+import sqlite3, json, time, subprocess, argparse, os, sys, shutil
 from pathlib import Path
 ROOT=Path(__file__).resolve().parents[1]
 DB=ROOT/"var/jobs.db"
 PY=str((ROOT/".venv/Scripts/python.exe").resolve())
+if not os.path.exists(PY):
+    py_cmd = shutil.which("python") or shutil.which("py")
+    PY = py_cmd if py_cmd else "python"
 
 def init():
     DB.parent.mkdir(parents=True, exist_ok=True)
