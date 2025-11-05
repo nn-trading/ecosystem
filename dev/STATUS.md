@@ -1,17 +1,9 @@
 
 Session 2025-11-05 update
 - ASCII-only policy enforced for all persisted artifacts
-- Smoke validation: ok=1; ToolsRegistry banner present; stderr clean; eventlog topics present
+- Smoke validation: ok=1; ToolsRegistry banner present; stderr clean; eventlog present
 - EventLog snapshot: runs/current/eventlog_recent.json
 - Task tracker: avoiding sessions/TASKS.md due to emoji encoding; using logs/tasks.json + TASKS.md root
-
-
-Session 2025-11-05 update
-- ASCII-only policy enforced for all persisted artifacts
-- Smoke validation: ok=1; ToolsRegistry banner present; stderr clean; eventlog topics present
-- EventLog snapshot: runs/current/eventlog_recent.json
-- Task tracker: avoiding sessions/TASKS.md due to emoji encoding; using logs/tasks.json + TASKS.md root
-
 
 
 Recent run: 20251104_000000
