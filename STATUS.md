@@ -80,4 +80,4 @@ Recent run: 20251105_123840
 Pytest: 4 passed, 1 warning in 0.31s
 Smoke: headless foreground run completed
 Artifacts: reports and out under C:\bots
-pytest: unknown
+pytest: 34 passed, 1 skipped, 3 warnings
