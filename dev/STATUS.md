@@ -1,4 +1,19 @@
 
+Session 2025-11-05 update
+- ASCII-only policy enforced for all persisted artifacts
+- Smoke validation: ok=1; ToolsRegistry banner present; stderr clean; eventlog topics present
+- EventLog snapshot: runs/current/eventlog_recent.json
+- Task tracker: avoiding sessions/TASKS.md due to emoji encoding; using logs/tasks.json + TASKS.md root
+
+
+Session 2025-11-05 update
+- ASCII-only policy enforced for all persisted artifacts
+- Smoke validation: ok=1; ToolsRegistry banner present; stderr clean; eventlog topics present
+- EventLog snapshot: runs/current/eventlog_recent.json
+- Task tracker: avoiding sessions/TASKS.md due to emoji encoding; using logs/tasks.json + TASKS.md root
+
+
+
 Recent run: 20251104_000000
 Ops: CORE loops (intent, planner, inbox) and tools watcher are singletons; main.py duplicate resolved
 EventLog: stats ok; tools watcher heartbeats confirmed; health checks OK
@@ -13,5 +28,7 @@ Pytest summary
 - Output: var\pytest_output.txt
 - Result: tests passed; 1 skipped
 
-Headless restart
-- Ran dev\start_headless.ps1; logs\headless_stdout.log shows Headless mode; logs\headless_health.json ok=true
+Headless restart (explicit)
+- Stopped prior PID if present; restarted via dev\stop_headless.ps1 + dev\start_headless.ps1 (STOP_AFTER_SEC=8, HEARTBEAT_SEC=1)
+- Verified via dev\obs_cli.py recent: heartbeat pid=49432; system/health ok=true
+- Stats increased: pre max_id=121768; post max_id=121891
