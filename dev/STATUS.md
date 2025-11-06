@@ -24,3 +24,7 @@ Headless restart (explicit)
 - Stopped prior PID if present; restarted via dev\stop_headless.ps1 + dev\start_headless.ps1 (STOP_AFTER_SEC=8, HEARTBEAT_SEC=1)
 - Verified via dev\obs_cli.py recent: heartbeat pid=49432; system/health ok=true
 - Stats increased: pre max_id=121768; post max_id=121891
+RC update 2025-11-06 02:40:20
+- matrix: present -> reports/capability_matrix.json
+- pytest: pass (see var/pytest_output.txt)
+- snapshot_gc: removed 48
