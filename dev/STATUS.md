@@ -61,3 +61,12 @@ CORE-03 verification 2025-11-06 05:19:08
   - space_phrase: eventlog=0 loggerdb=0
   - wildcard_system_star: eventlog=8 loggerdb=8
   - quote_phrase: eventlog=0 loggerdb=0
+
+CORE-03 Complete + Docs added (Option B)
+- Completed CORE-03 verification and aligned EventLog/LoggerDB search
+- Added docs/SEARCH_AND_DB.md, docs/POLICY_ASCII.md (if missing), docs/OPERATIONS_QUICKSTART.md
+- See docs for DB path precedence, FTS/LIKE fallback, escaping, and CLI examples
+
+
+Docs update finalized 2025-11-06 06:37:08
+- Docs added: docs/OPERATIONS_QUICKSTART.md, docs/POLICY_ASCII.md, docs/SEARCH_AND_DB.md
