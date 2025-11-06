@@ -61,3 +61,7 @@ sessions/
 # Ignore PowerShell helper scripts in logs
 logs/*.ps1
 
+
+# Ignore tmp helpers
+/dev/tmp_update_tasks.py
+/var/tmp_mark_fr12.py
