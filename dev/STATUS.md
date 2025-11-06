@@ -49,3 +49,15 @@ CORE-03 verification 2025-11-06 05:03:41
   - space_phrase: eventlog=0 loggerdb=0
   - wildcard_system_star: eventlog=8 loggerdb=8
   - quote_phrase: eventlog=0 loggerdb=0
+
+CORE-03 verification 2025-11-06 05:19:08
+- EventLog FTS=True DB=C:\bots\ecosys\var\events.db
+- LoggerDB FTS=True DB=C:\bots\ecosys\var\events.db
+- Search proofs (counts):
+  - topic_colon_heartbeat: eventlog=100 loggerdb=0
+  - topic_equals_heartbeat: eventlog=100 loggerdb=0
+  - backslash_path: eventlog=100 loggerdb=100
+  - backslash_path_full: eventlog=0 loggerdb=0
+  - space_phrase: eventlog=0 loggerdb=0
+  - wildcard_system_star: eventlog=8 loggerdb=8
+  - quote_phrase: eventlog=0 loggerdb=0

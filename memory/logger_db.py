@@ -4,34 +4,6 @@ import os, json, sqlite3, time, threading, hashlib
 from pathlib import Path
 from typing import Any, Dict, List, Optional, Tuple
 
-# Safe LIKE/FTS helpers
-try:
-    from dev.search_escape import like_pattern, quote_fts  # type: ignore
-except Exception:
-    def like_pattern(term: str, escape_char: str = '\\'):
-        s = str(term)
-        s = s.replace(escape_char, escape_char + escape_char)
-        s = s.replace('%', escape_char + '%').replace('_', escape_char + '_')
-        return f"%{s}%", escape_char
-    def quote_fts(term: str) -> str:
-        s = str(term)
-        return '"' + s.replace('"', '""') + '"'
-
-
-# Safe LIKE/FTS helpers
-try:
-    from dev.search_escape import like_pattern, quote_fts  # type: ignore
-except Exception:
-    def like_pattern(term: str, escape_char: str = '\\'):
-        s = str(term)
-        s = s.replace(escape_char, escape_char + escape_char)
-        s = s.replace('%', escape_char + '%').replace('_', escape_char + '_')
-        return f"%{s}%", escape_char
-    def quote_fts(term: str) -> str:
-        s = str(term)
-        return '"' + s.replace('"', '""') + '"'
-
-
 _DB_PATH = Path(
         os.environ.get("ECOSYS_LOGGER_DB")
         or os.environ.get("ECOSYS_MEMORY_DB")
