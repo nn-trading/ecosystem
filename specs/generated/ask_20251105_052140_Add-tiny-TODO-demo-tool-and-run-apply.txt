@@ -1,0 +1,6 @@
+SPEC SEED
+format: ascii
+version: 1
+created: 20251105_052140
+ask: Add tiny TODO demo tool and run apply
+status: seeded

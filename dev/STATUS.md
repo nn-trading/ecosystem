@@ -28,3 +28,24 @@ RC update 2025-11-06 02:40:20
 - matrix: present -> reports/capability_matrix.json
 - pytest: pass (see var/pytest_output.txt)
 - snapshot_gc: removed 48
+RC close-out: matrix, proofs, pytest, restart verified
+
+RC update 2025-11-06 04:32:02
+- EventLog: total 128886 rollups 0 fts=True db=C:\bots\ecosys\var\events.db
+- LoggerDB: events 128886 artifacts 16 fts=True db=C:\bots\ecosys\var\events.db
+- Latest snapshot: runs/20251106-034923
+- Captures:
+  - logs/eventlog_stats.json; logs/eventlog_recent.json; logs/eventlog_db_path.json
+  - logs/loggerdb_stats.json; logs/loggerdb_recent.json; logs/loggerdb_artifacts.json; logs/loggerdb_dbpath.json
+
+CORE-03 verification 2025-11-06 05:03:41
+- EventLog FTS=True DB=C:\bots\ecosys\var\events.db
+- LoggerDB FTS=True DB=C:\bots\ecosys\var\events.db
+- Search proofs (counts):
+  - topic_colon_heartbeat: eventlog=100 loggerdb=0
+  - topic_equals_heartbeat: eventlog=100 loggerdb=0
+  - backslash_path: eventlog=100 loggerdb=100
+  - backslash_path_full: eventlog=0 loggerdb=0
+  - space_phrase: eventlog=0 loggerdb=0
+  - wildcard_system_star: eventlog=8 loggerdb=8
+  - quote_phrase: eventlog=0 loggerdb=0

@@ -1,0 +1,6 @@
+name: "EventBusV1"
+pip: []
+files:
+  - use_template: "py_module"
+    path: "tools\generated\module.py"
+    module_name: "tools.generated.module"

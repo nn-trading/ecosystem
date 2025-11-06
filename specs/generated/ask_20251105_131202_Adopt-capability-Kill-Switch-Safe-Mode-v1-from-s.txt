@@ -1,0 +1,6 @@
+SPEC SEED
+format: ascii
+version: 1
+created: 20251105_131202
+ask: Adopt capability: Kill-Switch & Safe-Mode v1 from specs\capabilities\kill_switch_safe_mode_v1.yaml
+status: seeded

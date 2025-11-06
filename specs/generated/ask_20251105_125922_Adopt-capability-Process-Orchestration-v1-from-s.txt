@@ -1,0 +1,6 @@
+SPEC SEED
+format: ascii
+version: 1
+created: 20251105_125922
+ask: Adopt capability: Process Orchestration v1 from specs\capabilities\process_orchestration_v1.yaml
+status: seeded

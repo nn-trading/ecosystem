@@ -1,0 +1,6 @@
+SPEC SEED
+format: ascii
+version: 1
+created: 20251105_131202
+ask: Adopt capability: Comms & Alerts v1 from specs\capabilities\comms_alerts_v1.yaml
+status: seeded

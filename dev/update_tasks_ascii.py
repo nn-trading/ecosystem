@@ -46,10 +46,13 @@ def main() -> int:
         ('DECIDE-PREFLIGHT', 'Decide disposition of dev/preflight.py (track/ignore/remove) and act'),
         ('UPDATE-RUNBOOK', 'Update RUNBOOK.md with HEAD and latest snapshot path'),
         ('CORE-01-NEXT', 'Bootstrap rule-based intent parser skeleton (core/intent.py)'),
+        ('RC-STATUS-LOG', 'Reality Check: STATUS.md and steps.log updated'),
+        ('RC-FINALIZE', 'Reality Check: maintenance snapshot/GC sweep'),
     ]
     ensure_todo = [
         ('summarize-progress', 'Summarize progress and close out session'),
         ('GIT-REMOTE', 'Configure remote only if push is requested'),
+        ('RC-COMMIT', 'Reality Check: local commit (no push) with ASCII-only message'),
     ]
     idx = {str(t.get('id')): t for t in session if isinstance(t, dict)}
     for tid, title in ensure_done:
@@ -81,10 +84,8 @@ def main() -> int:
         json.dump(data, f, ensure_ascii=True, indent=2)
         f.write('\n')
 
-    # Append step log
-    proofs = log_dir / 'proofs'
-    proofs.mkdir(parents=True, exist_ok=True)
-    step_log = proofs / 'step_log.txt'
+    # Append step log (migrated to logs/steps.log)
+    step_log = log_dir / 'steps.log'
     # detect latest run snapshot path
     runs_dir = repo / 'runs'
     latest = ''

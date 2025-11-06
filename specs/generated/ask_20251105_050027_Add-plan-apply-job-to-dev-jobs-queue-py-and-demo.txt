@@ -1,0 +1,6 @@
+SPEC SEED
+format: ascii
+version: 1
+created: 20251105_050027
+ask: Add plan_apply job to dev/jobs_queue.py and demo enqueue
+status: seeded

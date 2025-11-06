@@ -60,6 +60,16 @@ def cmd_rollup(args) -> int:
     return 0
 
 
+def cmd_db_path(args) -> int:
+    ev = EventLog()
+    info = {"db_path": str(ev.db_path)}
+    if args.output:
+        _write_json_ascii(Path(args.output), info)
+    else:
+        print(json.dumps(info, **ASCII_JSON_KW))
+    return 0
+
+
 def _top_topics(ev: EventLog, limit: int = 10):
     cur = ev.conn.execute(
         "SELECT topic, COUNT(*) AS c FROM events GROUP BY topic ORDER BY c DESC LIMIT ?",
@@ -166,6 +176,10 @@ def build_parser():
     sp.add_argument("-n", type=int, default=1000, help="Rows to export")
     sp.add_argument("-o", "--output", required=True, help="Output path (JSONL)")
     sp.set_defaults(func=cmd_export_jsonl)
+
+    sp = sub.add_parser("db-path", help="Print resolved DB path")
+    sp.add_argument("-o", "--output", help="Write JSON to file instead of stdout")
+    sp.set_defaults(func=cmd_db_path)
 
     sp = sub.add_parser("snapshot-run", help="Write snapshot under runs/<ts>/")
     sp.add_argument("-n", type=int, default=200, help="Recent events to include")

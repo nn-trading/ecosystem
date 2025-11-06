@@ -1,0 +1,6 @@
+SPEC SEED
+format: ascii
+version: 1
+created: 20251105_125922
+ask: Adopt capability: Event Bus v1 from specs\capabilities\event_bus_v1.yaml
+status: seeded
