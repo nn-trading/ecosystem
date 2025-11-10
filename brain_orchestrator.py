@@ -8,13 +8,16 @@ OPENAI_MODEL    = os.environ.get('OPENAI_MODEL', 'openai/gpt-oss-20b')
 
 TOOLS_PY = r"C:\\bots\\ecosys\\tools\\gui_tool.py"
 WEB_PY   = r"C:\\bots\\ecosys\\tools\\web_tool.py"
+FILE_PY  = r"C:\\bots\\ecosys\\tools\\file_tool.py"
 APP_PY   = r"C:\\bots\\ecosys\\tools\\app_tool.py"
+HOTKEY_PY= r"C:\\bots\\ecosys\\tools\\hotkey_tool.py"
 PYTHON   = r"C:\\bots\\ecosys\\.venv\\Scripts\\python.exe"
 REPORTS  = r"C:\\bots\\ecosys\\reports"
 
 ALLOWED_TOOLS = {
     'openurl','window','type','click','move','hotkey','scroll','screenshot','ocr',
-    'shell','wait','web_play','web_get', 'app_open','app_close','app_focus','app_list'
+    'shell','wait','web_play','web_get', 'app_open','app_close','app_focus','app_list',
+    'file_download','press'
 }
 
 SCHEMA = textwrap.dedent("""\
@@ -24,11 +27,15 @@ You control a Windows PC through these tools (emit JSON actions):
 - type {text, enter?}
 - click {x?, y?, button?=(left|right|middle), double?}
 - move {x, y, relative?, duration?}
-- hotkey {keys CSV, e.g. "ctrl,shift,esc"}
+- press {keys CSV, interval?, e.g. "enter,enter"}
+- hotkey {combo, interval?}
 - scroll {amount (pos=up, neg=down)}
 - screenshot {path?, monitor? (int)}                             # OS-level desktop capture (monitor 0 = full desktop)
 - ocr {image}
 - wait {seconds}                                                 # prefer over shell sleeps
+
+- file_download {url, out, timeout?}
+
 - shell {cmd}                                                    # filesystem/CLI tasks only (not for delays)
 - web_play {url, wait_selector?, timeout?, page_shot (abs path)?, fullpage?, html_out (abs path)?, eval_selector?}  # headless Playwright
 - web_get {url, save?, headers?}                                 # simple HTTP GET via requests
@@ -111,7 +118,7 @@ def run_action(tool, args):
             return {'ok': False, 'error': str(e), 'tool': 'shell', 'args': args}
 
     # gui_tool mapped actions
-    if tool in {'openurl','window','type','click','move','hotkey','scroll','screenshot','ocr'}:
+    if tool in {'openurl','window','type','click','move','scroll','screenshot','ocr'}:
         return _run_python_tool(TOOLS_PY, tool, args or {}, timeout=240)
 
     # web_tool mapped actions
@@ -149,6 +156,13 @@ def run_action(tool, args):
         sub = tool.split('_',1)[1]
         if sub in {'open','close','focus','list'}:
             return _run_python_tool(APP_PY, sub, args or {}, timeout=180)
+
+    if tool == 'file_download':
+        return _run_python_tool(FILE_PY, 'download', args or {}, timeout=180)
+    if tool == 'hotkey':
+        return _run_python_tool(HOTKEY_PY, 'hotkey', args or {}, timeout=60)
+    if tool == 'press':
+        return _run_python_tool(HOTKEY_PY, 'press', args or {}, timeout=60)
 
     return {'ok': False, 'error': 'unknown tool', 'tool': tool}
 
