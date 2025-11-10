@@ -1,0 +1,155 @@
+{
+  "goal": "Open Notepad using app_open {name:'notepad.exe'}. Wait 1 second using wait {seconds:1}. Focus its window with app_focus {title:'Notepad'}. Type the text ECOSYSTEM READY and press Enter using type {text:'ECOSYSTEM READY', enter:true}. Press hotkey ctrl+s using hotkey {combo:'ctrl+s'}. Type C:\\bots\\ecosys\\reports\\ECOSYSTEM_READY.txt and press Enter using type {text:'C:\\bots\\ecosys\\reports\\ECOSYSTEM_READY.txt', enter:true}. Wait 1 second using wait {seconds:1}. Take a desktop screenshot to C:\\bots\\ecosys\\reports\\screens\\ecosystem_ready2.png using screenshot {path:'C:\\bots\\ecosys\\reports\\screens\\ecosystem_ready2.png'}. Close Notepad using app_close {name:'notepad.exe'}. Stop when done.",
+  "steps": [
+    {
+      "step": 1,
+      "assistant_reply": "{\"plan\":\"Open Notepad, type text, save file, screenshot, close Notepad\",\"actions\":[{\"tool\":\"app_open\",\"args\":{\"name\":\"notepad.exe\"}},{\"tool\":\"wait\",\"args\":{\"seconds\":1}},{\"tool\":\"app_focus\",\"args\":{\"title\":\"Notepad\"}},{\"tool\":\"type\",\"args\":{\"text\":\"ECOSYSTEM READY\",\"enter\":true}},{\"tool\":\"hotkey\",\"args\":{\"combo\":\"ctrl+s\"}},{\"tool\":\"type\",\"args\":{\"text\":\"C:\\\\\\\\bots\\\\\\\\ecosys\\\\\\\\reports\\\\\\\\ECOSYSTEM_READY.txt\",\"enter\":true}},{\"tool\":\"wait\",\"args\":{\"seconds\":1}},{\"tool\":\"screenshot\",\"args\":{\"path\":\"C:\\\\\\\\bots\\\\\\\\ecosys\\\\\\\\reports\\\\\\\\screens\\\\\\\\ecosystem_ready2.png\"}},{\"tool\":\"app_close\",\"args\":{\"name\":\"notepad.exe\"}}],\"stop\":true,\"next_prompt\":null}",
+      "raw": {
+        "id": "gen-1762779790-XYfThxF5cxaeFifdya5q",
+        "provider": "Amazon Bedrock",
+        "model": "openai/gpt-oss-20b",
+        "object": "chat.completion",
+        "created": 1762779790,
+        "choices": [
+          {
+            "logprobs": null,
+            "finish_reason": "stop",
+            "native_finish_reason": "stop",
+            "index": 0,
+            "message": {
+              "role": "assistant",
+              "content": "{\"plan\":\"Open Notepad, type text, save file, screenshot, close Notepad\",\"actions\":[{\"tool\":\"app_open\",\"args\":{\"name\":\"notepad.exe\"}},{\"tool\":\"wait\",\"args\":{\"seconds\":1}},{\"tool\":\"app_focus\",\"args\":{\"title\":\"Notepad\"}},{\"tool\":\"type\",\"args\":{\"text\":\"ECOSYSTEM READY\",\"enter\":true}},{\"tool\":\"hotkey\",\"args\":{\"combo\":\"ctrl+s\"}},{\"tool\":\"type\",\"args\":{\"text\":\"C:\\\\\\\\bots\\\\\\\\ecosys\\\\\\\\reports\\\\\\\\ECOSYSTEM_READY.txt\",\"enter\":true}},{\"tool\":\"wait\",\"args\":{\"seconds\":1}},{\"tool\":\"screenshot\",\"args\":{\"path\":\"C:\\\\\\\\bots\\\\\\\\ecosys\\\\\\\\reports\\\\\\\\screens\\\\\\\\ecosystem_ready2.png\"}},{\"tool\":\"app_close\",\"args\":{\"name\":\"notepad.exe\"}}],\"stop\":true,\"next_prompt\":null}",
+              "refusal": null,
+              "reasoning": null
+            }
+          }
+        ],
+        "usage": {
+          "prompt_tokens": 697,
+          "completion_tokens": 294,
+          "total_tokens": 991
+        }
+      }
+    }
+  ],
+  "observations": [
+    {
+      "step": 1,
+      "plan": "Open Notepad, type text, save file, screenshot, close Notepad",
+      "actions": [
+        {
+          "tool": "app_open",
+          "args": {
+            "name": "notepad.exe"
+          },
+          "result": {
+            "ok": true,
+            "action": "open",
+            "name": "notepad.exe"
+          }
+        },
+        {
+          "tool": "wait",
+          "args": {
+            "seconds": 1
+          },
+          "result": {
+            "ok": true,
+            "action": "wait",
+            "seconds": 1.0
+          }
+        },
+        {
+          "tool": "app_focus",
+          "args": {
+            "title": "Notepad"
+          },
+          "result": {
+            "ok": true,
+            "action": "focus",
+            "title": "Notepad",
+            "pid": null
+          }
+        },
+        {
+          "tool": "type",
+          "args": {
+            "text": "ECOSYSTEM READY",
+            "enter": true
+          },
+          "result": {
+            "ok": true,
+            "action": "type",
+            "len": 15,
+            "enter": true
+          }
+        },
+        {
+          "tool": "hotkey",
+          "args": {
+            "combo": "ctrl+s"
+          },
+          "result": {
+            "ok": true,
+            "action": "hotkey",
+            "combo": [
+              "ctrl",
+              "s"
+            ]
+          }
+        },
+        {
+          "tool": "type",
+          "args": {
+            "text": "C:\\\\bots\\\\ecosys\\\\reports\\\\ECOSYSTEM_READY.txt",
+            "enter": true
+          },
+          "result": {
+            "ok": true,
+            "action": "type",
+            "len": 46,
+            "enter": true
+          }
+        },
+        {
+          "tool": "wait",
+          "args": {
+            "seconds": 1
+          },
+          "result": {
+            "ok": true,
+            "action": "wait",
+            "seconds": 1.0
+          }
+        },
+        {
+          "tool": "screenshot",
+          "args": {
+            "path": "C:\\\\bots\\\\ecosys\\\\reports\\\\screens\\\\ecosystem_ready2.png"
+          },
+          "result": {
+            "ok": true,
+            "action": "screenshot",
+            "path": "C:\\\\bots\\\\ecosys\\\\reports\\\\screens\\\\ecosystem_ready2.png",
+            "monitor": 0
+          }
+        },
+        {
+          "tool": "app_close",
+          "args": {
+            "name": "notepad.exe"
+          },
+          "result": {
+            "ok": true,
+            "action": "close",
+            "name": "notepad.exe",
+            "rc": 0,
+            "stdout": "SUCCESS: The process with PID 55228 (child process of PID 30228) has been terminated.\n",
+            "stderr": ""
+          }
+        }
+      ],
+      "stop": true
+    }
+  ]
+}
