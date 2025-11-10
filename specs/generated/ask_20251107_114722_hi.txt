@@ -1,0 +1,6 @@
+SPEC SEED
+format: ascii
+version: 1
+created: 20251107_114722
+ask: hi
+status: seeded

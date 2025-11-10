@@ -1,0 +1,6 @@
+SPEC SEED
+format: ascii
+version: 1
+created: 20251107_114916
+ask: No, there are multiple of you, don't you know? There is the brain you, there is the communicator, there is the tester there is the quality control, dont you know that? Arent you talking to all of them?
+status: seeded

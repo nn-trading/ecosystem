@@ -1,0 +1,6 @@
+SPEC SEED
+format: ascii
+version: 1
+created: 20251106_155940
+ask: where did you get - are you here? from
+status: seeded

@@ -1,0 +1,6 @@
+SPEC SEED
+format: ascii
+version: 1
+created: 20251106_170406
+ask: on my desktop create a pythong calculator for addition, subtraction, multiply
+status: seeded

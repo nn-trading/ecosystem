@@ -1,0 +1,6 @@
+SPEC SEED
+format: ascii
+version: 1
+created: 20251107_120510
+ask: are you fucking dumb???
+status: seeded

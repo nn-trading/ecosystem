@@ -1,0 +1,6 @@
+SPEC SEED
+format: ascii
+version: 1
+created: 20251107_114749
+ask: do you know what you are?
+status: seeded

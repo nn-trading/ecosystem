@@ -1,0 +1,6 @@
+SPEC SEED
+format: ascii
+version: 1
+created: 20251107_062550
+ask: what is 2+2?`nexit`n
+status: seeded

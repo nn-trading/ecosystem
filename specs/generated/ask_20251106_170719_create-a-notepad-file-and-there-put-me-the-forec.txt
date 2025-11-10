@@ -1,0 +1,6 @@
+SPEC SEED
+format: ascii
+version: 1
+created: 20251106_170719
+ask: create a notepad file and there put me the forecast for the next 5 days for weather in Dubai and Paris, and save it on the desktop and name it forecast1-5
+status: seeded

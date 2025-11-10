@@ -244,6 +244,37 @@ async def ui_printer(bus: EventBus):
             if safe:
                 print(f"AI: {safe}")
 
+
+async def ui_tail_writer(bus: EventBus):
+    """Append ASCII JSONL lines to reports/chat/exact_tail.jsonl for each ui/print."""
+    import time as _time
+    try:
+        repo = _repo_root()
+    except Exception:
+        repo = os.getcwd()
+    tail_path = os.path.join(repo, "reports", "chat", "exact_tail.jsonl")
+    try:
+        os.makedirs(os.path.dirname(tail_path), exist_ok=True)
+    except Exception:
+        pass
+    async for env in bus.subscribe("ui/print"):
+        try:
+            payload = env.payload or {}
+            text = (payload.get("text") or "").strip()
+            if not text:
+                continue
+            sender = str(getattr(env, "sender", "") or "")
+            s_low = sender.lower()
+            role = "assistant"
+            if "brain" in s_low:
+                role = "brain"
+            elif s_low.startswith("ai-") or "worker" in s_low or "agent" in s_low:
+                role = "agent"
+            obj = {"role": role, "text": text, "ts": _time.time(), "sender": sender}
+            write_jsonl_ascii(tail_path, obj)
+        except Exception:
+            pass
+
 async def summary_printer(bus: EventBus):
     async for env in bus.subscribe("memory/summary"):
         txt = (env.payload or {}).get("text") or ""
@@ -441,8 +472,9 @@ async def main():
     ui_tasks: List[asyncio.Task] = []
     t1 = asyncio.create_task(ui_printer(bus), name="ui_printer")
     t2 = asyncio.create_task(summary_printer(bus), name="summary_printer")
-    _watch_task("ui_printer", t1); _watch_task("summary_printer", t2)
-    ui_tasks += [t1, t2]
+    t3 = asyncio.create_task(ui_tail_writer(bus), name="ui_tail_writer")
+    _watch_task("ui_printer", t1); _watch_task("summary_printer", t2); _watch_task("ui_tail_writer", t3)
+    ui_tasks += [t1, t2, t3]
     await asyncio.sleep(0)
 
     # Re-emit resume after UI subscribers ready

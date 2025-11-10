@@ -1,0 +1,2 @@
+default: gpt-5
+lock: true

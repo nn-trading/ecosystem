@@ -1,0 +1,6 @@
+SPEC SEED
+format: ascii
+version: 1
+created: 20251107_114959
+ask: how many screens do I have open on my desktop right now?
+status: seeded

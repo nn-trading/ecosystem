@@ -1,0 +1,6 @@
+SPEC SEED
+format: ascii
+version: 1
+created: 20251108_042418
+ask: ping e2e2
+status: seeded

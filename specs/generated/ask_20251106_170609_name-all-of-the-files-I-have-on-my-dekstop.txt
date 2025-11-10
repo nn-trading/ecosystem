@@ -1,0 +1,6 @@
+SPEC SEED
+format: ascii
+version: 1
+created: 20251106_170609
+ask: name all of the files I have on my dekstop
+status: seeded

@@ -1,0 +1,6 @@
+SPEC SEED
+format: ascii
+version: 1
+created: 20251107_120600
+ask: give me the weather forecast for Budapest for next 3 days and write it in notepad and save to my dekstop and name the files fore1-3
+status: seeded

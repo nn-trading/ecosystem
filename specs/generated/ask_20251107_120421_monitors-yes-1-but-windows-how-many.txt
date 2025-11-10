@@ -1,0 +1,6 @@
+SPEC SEED
+format: ascii
+version: 1
+created: 20251107_120421
+ask: monitors yes, 1, but windows how many????
+status: seeded

@@ -1,0 +1,6 @@
+SPEC SEED
+format: ascii
+version: 1
+created: 20251106_170903
+ask: make it please, I asked you to do it.. I dont understand why you havent done it
+status: seeded

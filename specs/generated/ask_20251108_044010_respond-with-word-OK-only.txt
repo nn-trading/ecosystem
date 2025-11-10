@@ -1,0 +1,6 @@
+SPEC SEED
+format: ascii
+version: 1
+created: 20251108_044010
+ask: respond with word OK only
+status: seeded

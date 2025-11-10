@@ -1,0 +1,3 @@
+mode: brain
+echo: false
+tail: reports/chat/exact_tail.jsonl
