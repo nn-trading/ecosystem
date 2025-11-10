@@ -45,6 +45,15 @@ EventLog CLI
 - Snapshot run
   python dev\eventlog_cli.py snapshot-run -n 200
 
+
+New tools and local sanity
+- Added tools: press, hotkey, file_download integrated into brain_orchestrator (ALLOWED_TOOLS + SCHEMA updated)
+- Local self-test: python dev\orch_sanity.py
+  Outputs JSON confirming tools present and working:
+  - press: ok true
+  - file_download: ok true with status 200 and sha256
+- App control quick check: python tools\app_tool.py list --filter powershell
+
 Notes
 - All files written by tools prefer ASCII. JSON dumps use ensure_ascii=true.
 - .gitignore excludes logs/, var/, runs/, workspace/logs/ artifacts, data/.
@@ -81,3 +90,4 @@ Pytest: 4 passed, 1 warning in 0.31s
 Smoke: headless foreground run completed
 Artifacts: reports and out under C:\bots
 pytest: 34 passed, 1 skipped, 3 warnings
+
