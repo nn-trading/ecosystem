@@ -66,3 +66,4 @@ logs/*.ps1
 /dev/tmp_update_tasks.py
 /var/tmp_mark_fr12.py
 logs/
+api_key.txt
