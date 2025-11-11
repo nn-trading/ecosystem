@@ -1,4 +1,4 @@
-param(
+﻿param(
   [string]$Headless = '1',
   [int]$StopAfterSec = 0,
   [int]$HeartbeatSec = 5,
@@ -451,3 +451,5 @@ try {
 }
 # ======= AUTONOMY ORCHESTRATOR SMOKE END =======
 
+
+Write-Host ('provider: ' + (Get-Content .\config\llm.yaml | Select-String '^provider:' | ForEach-Object { .ToString().Split(':')[1].Trim() }))
