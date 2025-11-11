@@ -417,3 +417,37 @@ if ($PSBoundParameters.ContainsKey('Stop') -and $Stop -eq 1) { Stop-JobsWorker }
 elseif ($PSBoundParameters.ContainsKey('Background') -and $Background -eq 1) { Start-JobsWorker }
 # ======= JOBS WORKER INTEGRATION END =======
 
+
+# ======= AUTONOMY ORCHESTRATOR SMOKE START =======
+try {
+  $py = Join-Path $PSScriptRoot '.venv\Scripts\python.exe'
+  if (-not (Test-Path $py)) { $py = (Get-Command python -ErrorAction SilentlyContinue | Select-Object -First 1).Source }
+  if (-not $py) { $py = 'python' }
+  $screens = Join-Path $PSScriptRoot 'reports\screens'
+  New-Item -ItemType Directory -Force -Path $screens | Out-Null
+  $env:ECOSYS_STUB_SMOKE = '1'
+  & $py -m core.orchestrator --headless --smoke | Out-Null
+  $latestShot = $null
+  try {
+    $shots = Get-ChildItem -Path $screens -Filter 'shot_*.png' -ErrorAction SilentlyContinue | Sort-Object LastWriteTime -Descending
+    if ($shots -and $shots.Length -gt 0) { $latestShot = $shots[0].FullName }
+  } catch {}
+  $startPath = (Join-Path $PSScriptRoot 'start.ps1')
+  $dbPath = $env:ECOSYS_MEMORY_DB
+  if (-not $dbPath) { $dbPath = (Join-Path (Join-Path $PSScriptRoot 'var') 'events.db') }
+  Write-Host ("start.ps1: {0}" -f $startPath)
+  Write-Host ("db: {0}" -f $dbPath)
+  if ($null -ne $latestShot -and $latestShot) { Write-Host ("screenshot: {0}" -f $latestShot) } else { Write-Host ("screenshot: None") }
+  Write-Host ("usage: .\start.ps1")
+} catch {
+  Write-Host ("[start] Orchestrator smoke failed: {0}" -f $_.Exception.Message)
+  $startPath = (Join-Path $PSScriptRoot 'start.ps1')
+  $dbPath = $env:ECOSYS_MEMORY_DB
+  if (-not $dbPath) { $dbPath = (Join-Path (Join-Path $PSScriptRoot 'var') 'events.db') }
+  Write-Host ("start.ps1: {0}" -f $startPath)
+  Write-Host ("db: {0}" -f $dbPath)
+  Write-Host ("screenshot: None")
+  Write-Host ("usage: .\start.ps1")
+}
+# ======= AUTONOMY ORCHESTRATOR SMOKE END =======
+

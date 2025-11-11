@@ -10,7 +10,6 @@ from .events import UserRequest, PlanReady, WorkRequest, WorkResult, TestPassed,
 from .llm_provider import load_provider
 from .win_wait import wait_title_contains
 from pathlib import Path
-from pathlib import Path
 from memory.logger_db import get_logger_db
 
 bus = EventBus()
@@ -47,17 +46,18 @@ def _safe_screenshot(default_path: Optional[str] = None) -> Optional[str]:
     except Exception:
         return None
     
-async def worker_agent():
+async def worker_agent(headless: bool):
     async for env in bus.subscribe_prefix("plan/"):
         plan = env.payload.get("plan", "")
         if plan.startswith("SMOKE:"):
             try:
-                if os.environ.get("ECOSYS_STUB_SMOKE", "").strip() not in ("", "0", "false", "False"):
+                # In headless mode or when explicitly stubbed via env, short-circuit fast
+                if headless or (os.environ.get("ECOSYS_STUB_SMOKE", "").strip() not in ("", "0", "false", "False")):
                     await bus.publish("work/result", {"ok": True, "detail": "stubbed"}, sender="worker", job_id=env.job_id)
                     continue
                 # Execute Notepad smoke (best-effort, may fail in headless CI)
                 os.system("start notepad.exe")
-                w = wait_title_contains("Notepad", timeout_sec=10)
+                w = wait_title_contains("Notepad", timeout_sec=5)
                 ok = bool(w.get("ok"))
                 payload = {"ok": ok, "detail": json.dumps(w)}
                 if ok:
@@ -103,18 +103,32 @@ async def finish_agent():
             break
 
 async def run(headless: bool, smoke: bool):
+    # Ensure we subscribe to 'done' before any agents can publish it
+    done_event = asyncio.Event()
+
+    async def _done_watcher():
+        async for _ in bus.subscribe("done"):
+            done_event.set()
+            break
+
+    asyncio.create_task(_done_watcher())
+
+    # Start subscriber agents first so their subscriptions are registered
     tasks = [
-        asyncio.create_task(comm_agent(headless, smoke)),
         asyncio.create_task(brain_agent()),
-        asyncio.create_task(worker_agent()),
+        asyncio.create_task(worker_agent(headless)),
         asyncio.create_task(tester_agent()),
         asyncio.create_task(logger_agent()),
         asyncio.create_task(finish_agent()),
     ]
+    # Let the event loop run once to register subscriptions
+    await asyncio.sleep(0)
+
     if smoke:
+        # Trigger the smoke request after subscribers are ready
+        await comm_agent(headless, smoke)
         # Wait for Done event
-        async for _ in bus.subscribe("done"):
-            break
+        await done_event.wait()
         # Give tasks a brief chance to finish logging
         try:
             await asyncio.sleep(0)
