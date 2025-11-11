@@ -1,93 +1,27 @@
-Ecosystem AI status (ASCII-only)
+﻿Ecosystem AI status (ASCII-only)
 
 Location
 - Repo: C:\bots\ecosys
-- Branch: feature/loggerdb-cli
+- Branch: feature/autonomy-core
 
 State
-- EventLog: var\events.db (fts=true)
+- EventLog: var\events.db (fts=true). Override via ECOSYS_MEMORY_DB
 - start.ps1: numeric switches accepted (0/1) for Headless, Background, EnsureVenv, EnsureDeps, Stop, RunPytest
 - Logs: logs\start_stdout.log and logs\start_stderr.log
 - Bridge: main.py publishes system/heartbeat and system/health to EventLog via bridge
-- Triage summary: error=5; exception=2; fatal=0; traceback=0 (non-fatal sources observed)
 
-- Snapshot: runs\20251103-044804 captured (summary, stats, recent, top_topics)
-- Reports: C:\bots\reports\ascii_checks.json; C:\bots\reports\pytest_output.txt
-- Artifacts: C:\bots\artifacts\pytest_junit.xml; C:\bots\artifacts\loggerdb_cli_smoke.json
-- DB path unified (verified): var\events.db (override via ECOSYS_MEMORY_DB). Scan: C:\bots\reports\db_unify_scan.txt
-- LoggerDB CLI outputs: db_path_snapshot.json, loggerdb_stats.json, loggerdb_recent_20.json, loggerdb_search_heartbeat.json under C:\bots\reports
-Triage details
-- Sources observed in runs\current:
-  - tool/result: sysctl.launch fallback to notepad; missing exe; non-fatal
-  - ui/print: fallback info corresponding to sysctl.launch; informational
-  - tool/result: win.wait_title_contains: no-window; Add-Type compilation errors in temporary C#; non-fatal
-  - tool/result: pdf.to_text: file not found at data\_missing.pdf; non-fatal
-Usage examples (PowerShell)
-- Stop background processes
-  powershell -NoProfile -File .\start.ps1 -Stop 1
+One-click smoke output (expected)
+- Run: powershell -NoProfile -File .\start.ps1 -Headless 1 -Background 0
+- Prints EXACTLY:
+  start.ps1: <absolute path>
+  db: <ECOSYS_MEMORY_DB or var\events.db>
+  screenshot: <latest reports\screens\shot_*.png or None>
+  usage: .\start.ps1
 
-- Start headless in background, ensure deps
-  powershell -NoProfile -File .\start.ps1 -Headless 1 -Background 1 -EnsureDeps 1
-
-- Foreground run for 12 sec with fast heartbeats and health
-  powershell -NoProfile -File .\start.ps1 -Headless 1 -Background 0 -StopAfterSec 12 -HeartbeatSec 1 -HealthSec 2
-
-- Run with pytest precheck disabled
-  powershell -NoProfile -File .\start.ps1 -RunPytest 0
-
-EventLog CLI
-- Recent
-  python dev\eventlog_cli.py recent -n 5
-- Search (handles special chars with fallback)
-  python dev\eventlog_cli.py search "ui/print" -n 3
-- Stats
-  python dev\eventlog_cli.py stats
-- Snapshot run
-  python dev\eventlog_cli.py snapshot-run -n 200
-
-
-New tools and local sanity
-- Added tools: press, hotkey, file_download integrated into brain_orchestrator (ALLOWED_TOOLS + SCHEMA updated)
-- Local self-test: python dev\orch_sanity.py
-  Outputs JSON confirming tools present and working:
-  - press: ok true
-  - file_download: ok true with status 200 and sha256
-- App control quick check: python tools\app_tool.py list --filter powershell
+Recent
+- Tests: previously green; artifacts at reports\tests
+- Smoke: foreground run completed; screenshot path printed when available
 
 Notes
-- All files written by tools prefer ASCII. JSON dumps use ensure_ascii=true.
-- .gitignore excludes logs/, var/, runs/, workspace/logs/ artifacts, data/.
-
-Entry points and dependency summary
-Recent run: 20251102-142843
-Pytest: 34 passed, 1 skipped, 3 warnings
-Smoke: 60s background run completed; stdout captured to runs\current\smoke_60s.txt; summary no matches
-Smoke-direct: 60s foreground run captured to runs\current\smoke_60s_direct.txt; summary no matches
-Smoke-fg: attempt blocked by harness; use smoke_60s_direct.txt as substitute; re-run with longer timeout if needed
-
-EventLog: snapshot at runs\20251105-131202 (stats/recent/top_topics); Total events: 114911; Top topic: system/heartbeat
-Artifacts: runs\current\smoke_60s.txt, runs\current\smoke_60s_direct.txt, runs\current\eventlog_recent.json, ops_log updated
-Next actions: CORE-01-Parser-Impl; CORE-03-Schema-Finalize; CORE-03-Search-Escapes; DOC-next-steps
-
-- Entry points: start.ps1, maintain.ps1, main.py
-- EventLog CLI: dev\eventlog_cli.py (stats, recent, search, snapshot-run)
-- Dependencies (from requirements.txt): rich, pydantic, psutil, prompt-toolkit, openai, pytest
-- Virtual environment: .venv under repo root
-
-
-
-Recent run: 20251101_132524
-Pytest: 34 passed, 1 skipped, 0 warnings
-Smoke: headless foreground run completed (StopAfterSec=10)
-Artifacts: out, reports, artifacts under C:\bots
-PR: refs/pull/1/head -> feature/loggerdb-cli (local bare remote)
-PR summary: C:\bots\reports\PR_1.txt
-Push summary: C:\bots\reports\bringup_push_summary.txt
-
-
-Recent run: 20251105_123840
-Pytest: 4 passed, 1 warning in 0.31s
-Smoke: headless foreground run completed
-Artifacts: reports and out under C:\bots
-pytest: 34 passed, 1 skipped, 3 warnings
-
+- .gitignore excludes logs/, var/, runs/, workspace/logs/, artifacts/, out/, reports/tests/, __pycache__/, *.pyc, .venv/
+- All files written by tools prefer ASCII. JSON dumps ensure_ascii=true.
