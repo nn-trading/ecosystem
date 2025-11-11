@@ -151,3 +151,15 @@ def main():
 
 if __name__=="__main__":
     main()
+
+
+def wait_title_contains(substring: str, timeout_sec: int = 15, poll_ms: int = 200) -> dict:
+    """
+    Thin wrapper over core.win_wait.wait_title_contains.
+    Returns a dict with keys: ok (bool), title (str), contains (str), and timing fields.
+    """
+    try:
+        from core.win_wait import wait_title_contains as _w
+    except Exception as e:
+        return {"ok": False, "error": f"import core.win_wait failed: {e}"}
+    return _w(substring, timeout_sec, poll_ms)
