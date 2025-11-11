@@ -1,4 +1,4 @@
-# C:\bots\ecosys\core\memory.py
+﻿# C:\bots\ecosys\core\memory.py
 from __future__ import annotations
 import os, io, json, time, asyncio, tempfile, shutil, unicodedata
 from core.ascii_writer import write_jsonl_ascii

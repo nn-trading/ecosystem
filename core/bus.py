@@ -1,4 +1,4 @@
-# C:\bots\ecosys\core\bus.py
+﻿# C:\bots\ecosys\core\bus.py
 from __future__ import annotations
 import asyncio
 import inspect
