@@ -452,4 +452,4 @@ try {
 # ======= AUTONOMY ORCHESTRATOR SMOKE END =======
 
 
-Write-Host ('provider: ' + (Get-Content .\config\llm.yaml | Select-String '^provider:' | ForEach-Object { .ToString().Split(':')[1].Trim() }))
+Write-Host ('provider: ' + (Get-Content .\config\llm.yaml | Select-String '^provider:' | ForEach-Object { $_.ToString().Split(':')[1].Trim() }))
