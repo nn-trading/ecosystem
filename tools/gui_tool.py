@@ -1,23 +1,43 @@
-import argparse, sys, time, os, json
-try:
-    import pyautogui, mouse, mss
-    from PIL import Image
-    import pygetwindow as gw
-    import pytesseract
-except Exception as e:
-    print(json.dumps({"ok": False, "error": f"missing deps: {e}"})); sys.exit(1)
+import argparse, sys, time, os, json, importlib
 
-pyautogui.FAILSAFE = False
-pyautogui.PAUSE = 0
+# Lazy imports: avoid hard failing during simple import (e.g., tests using wait wrapper)
+# Each operation will import only what it needs and return a graceful error if deps are missing.
+_DEF = {"ok": False, "error": "missing dependency"}
 
-# Try to auto-locate Tesseract on Windows
-if os.name == "nt":
-    tpath = r"C:\\Program Files\\Tesseract-OCR\\tesseract.exe"
-    if os.path.exists(tpath):
+def _mod(name):
+    try:
+        return importlib.import_module(name)
+    except Exception:
+        return None
+
+# Helpers for specific command deps
+def _need_mouse():
+    pa = _mod("pyautogui"); ms = _mod("mouse")
+    if pa:
         try:
-            pytesseract.pytesseract.tesseract_cmd = tpath
+            pa.FAILSAFE = False; pa.PAUSE = 0
         except Exception:
             pass
+    return pa, ms
+
+def _need_screenshot():
+    mss = _mod("mss"); pil_image = _mod("PIL.Image")
+    return mss, pil_image
+
+def _need_window():
+    return _mod("pygetwindow")
+
+def _need_ocr():
+    pt = _mod("pytesseract"); pil_image = _mod("PIL.Image")
+    # Try to auto-locate Tesseract on Windows
+    if pt and os.name == "nt":
+        tpath = r"C:\\Program Files\\Tesseract-OCR\\tesseract.exe"
+        if os.path.exists(tpath):
+            try:
+                pt.pytesseract.tesseract_cmd = tpath
+            except Exception:
+                pass
+    return pt, pil_image
 
 def do_move(args):
     x, y = int(args.x), int(args.y)
