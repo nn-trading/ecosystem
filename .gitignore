@@ -67,3 +67,7 @@ logs/*.ps1
 /var/tmp_mark_fr12.py
 logs/
 api_key.txt
+# diagnostics
+reports/eventlog/*.txt
+reports/tests/*.txt
+
