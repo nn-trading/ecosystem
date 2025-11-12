@@ -10,6 +10,21 @@ def _mod(name):
     except Exception:
         return None
 
+
+# Dynamic optional imports for GUI operations
+pyautogui = _mod("pyautogui")
+mss = _mod("mss")
+Image = _mod("PIL.Image")
+pytesseract = _mod("pytesseract")
+gw = _mod("pygetwindow")
+# Disable PyAutoGUI failsafe to avoid corner-triggered aborts during automation
+try:
+    if pyautogui:
+        pyautogui.FAILSAFE = False
+        pyautogui.PAUSE = 0
+except Exception:
+    pass
+
 # Helpers for specific command deps
 def _need_mouse():
     pa = _mod("pyautogui"); ms = _mod("mouse")

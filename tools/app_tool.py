@@ -24,8 +24,11 @@ def cmd_close(a):
             out = subprocess.run(['taskkill','/PID',str(a.pid),'/F','/T'], capture_output=True, text=True)
             return _ok(action='close', pid=a.pid, rc=out.returncode, stdout=out.stdout, stderr=out.stderr)
         elif a.name:
-            out = subprocess.run(['taskkill','/IM',a.name,'/F','/T'], capture_output=True, text=True)
-            return _ok(action='close', name=a.name, rc=out.returncode, stdout=out.stdout, stderr=out.stderr)
+            name = a.name
+            if not name.lower().endswith('.exe'):
+                name = name + '.exe'
+            out = subprocess.run(['taskkill','/IM',name,'/F','/T'], capture_output=True, text=True)
+            return _ok(action='close', name=name, rc=out.returncode, stdout=out.stdout, stderr=out.stderr)
         else:
             return _err('provide --name <exe> or --pid <id>', action='close')
     except Exception as e:

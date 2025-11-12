@@ -57,6 +57,10 @@ Rules:
 def call_chat(messages, temperature=0.2):
     url = OPENAI_API_BASE.rstrip('/') + '/chat/completions'
     headers = {'Authorization': f'Bearer {OPENAI_API_KEY}', 'Content-Type':'application/json'}
+    if 'openrouter.ai' in OPENAI_API_BASE.lower():
+        headers['HTTP-Referer'] = os.environ.get('OPENROUTER_HTTP_REFERER','https://github.com/nn-trading/ecosystem')
+        headers['Referer'] = os.environ.get('OPENROUTER_HTTP_REFERER','https://github.com/nn-trading/ecosystem')
+        headers['X-Title'] = os.environ.get('OPENROUTER_X_TITLE','ecosystem-ai')
     body = {'model': OPENAI_MODEL, 'messages': messages, 'temperature': temperature}
     r = requests.post(url, headers=headers, data=json.dumps(body), timeout=120)
     r.raise_for_status()
@@ -172,6 +176,10 @@ def main():
     ap.add_argument('--max_iters', type=int, default=3)
     args = ap.parse_args()
 
+    goal_text = args.goal
+    if goal_text in {'__ENV__','__ENV_GOAL__'}:
+        goal_text = os.environ.get('GOAL_TEXT', goal_text)
+
     os.makedirs(REPORTS, exist_ok=True)
     os.makedirs(os.path.join(REPORTS, 'screens'), exist_ok=True)
     os.makedirs(os.path.join(REPORTS, 'proofs'), exist_ok=True)
@@ -181,7 +189,7 @@ def main():
 
     messages = [
         {'role':'system','content': SCHEMA},
-        {'role':'user','content': f'GOAL: {args.goal}'}
+        {'role':'user','content': 'GOAL: ' + str(goal_text)}
     ]
     observations, all_steps = [], []
     ts = datetime.now().strftime('%Y%m%d_%H%M%S')
@@ -200,14 +208,28 @@ def main():
             continue
 
         plan = plan_obj.get('plan','')
-        actions = plan_obj.get('actions',[]) or []
+        actions_in = plan_obj.get('actions',[]) or []
         stop = bool(plan_obj.get('stop', False))
         next_prompt = plan_obj.get('next_prompt')
 
+        # Normalize actions: accept either {tool, args} or legacy {toolName: {...}}
+        norm_actions = []
+        for act in actions_in:
+            if isinstance(act, dict) and 'tool' in act:
+                tool = (act.get('tool') or '').strip()
+                a = act.get('args') or {}
+                norm_actions.append((tool, a))
+            elif isinstance(act, dict) and len(act) == 1:
+                k, v = next(iter(act.items()))
+                tool = str(k).strip()
+                a = v if isinstance(v, dict) else ({'value': v} if v is not None else {})
+                norm_actions.append((tool, a))
+            else:
+                # skip unrecognized action format
+                norm_actions.append(('', {'_raw': act}))
+
         step_obs = {'step': step, 'plan': plan, 'actions': [], 'stop': stop}
-        for act in actions:
-            tool = (act.get('tool') or '').strip()
-            a = act.get('args') or {}
+        for tool, a in norm_actions:
             if tool not in ALLOWED_TOOLS:
                 step_obs['actions'].append({'tool': tool, 'ok': False, 'error': 'unknown tool'}); continue
             res = run_action(tool, a)

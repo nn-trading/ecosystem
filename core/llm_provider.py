@@ -41,12 +41,19 @@ class OpenRouterProvider:
 
     def complete(self, prompt: str, system: Optional[str] = None) -> str:
         key = os.environ.get("OPENROUTER_API_KEY", "")
+        if not key:
+            try:
+                with open(os.path.join("secrets","openrouter.key"), "r", encoding="utf-8") as f:
+                    key = f.read().strip()
+            except Exception:
+                pass
         headers = {
             "Authorization": f"Bearer {key}",
             "Content-Type": "application/json",
             # Helpful (not required) metadata:
-            "HTTP-Referer": "https://github.com/nn-trading/ecosystem",
-            "X-Title": "Ecosystem AI",
+            "HTTP-Referer": os.environ.get("OPENROUTER_HTTP_REFERER","https://github.com/nn-trading/ecosystem"),
+            "Referer": os.environ.get("OPENROUTER_HTTP_REFERER","https://github.com/nn-trading/ecosystem"),
+            "X-Title": os.environ.get("OPENROUTER_X_TITLE","ecosystem-ai"),
         }
         msgs = []
         if system:
