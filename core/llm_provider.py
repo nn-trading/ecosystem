@@ -91,3 +91,4 @@ def load_provider(provider: str, model: str):
 def provider_factory():
     cfg = load_cfg()
     return load_provider(cfg["provider"], cfg["model"])
+
