@@ -114,3 +114,8 @@ Memory & Summaries
   }
 - Logs: logs\mem_rollup.log captures each invocation result
 
+
+## Memory & Summaries
+- One-off rollup: `python dev/mem_rollup.py`
+- Show latest 3 summaries: `python dev/mem_list.py`
+A Windows Scheduled Task **Ecosys-MemRollup** updates this every 10 minutes.

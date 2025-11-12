@@ -1,19 +1,10 @@
-import os, time, json, sqlite3, textwrap
+﻿import os, time, json, sqlite3
 REPO = r"C:\bots\ecosys"
 DB   = os.path.join(REPO, "var", "events.db")
 os.makedirs(os.path.dirname(DB), exist_ok=True)
 con = sqlite3.connect(DB)
 cur = con.cursor()
-# ensure table and columns exist even if legacy schema present
-cur.execute("CREATE TABLE IF NOT EXISTS summaries (id INTEGER PRIMARY KEY, ts REAL, span TEXT)")
-cols_sum = {r[1] for r in cur.execute("PRAGMA table_info(summaries)").fetchall()}
-for col, ddl in ("span", "TEXT"), ("text", "TEXT"), ("ts", "REAL"):
-    if col not in cols_sum:
-        try:
-            cur.execute(f"ALTER TABLE summaries ADD COLUMN {col} {ddl}")
-        except Exception:
-            pass
-# discover available columns from events
+cur.execute("CREATE TABLE IF NOT EXISTS summaries (id INTEGER PRIMARY KEY, ts REAL, span TEXT, text TEXT)")
 cols = {r[1] for r in cur.execute("PRAGMA table_info(events)").fetchall()}
 want = ["ts","agent","topic","payload_json"]
 sel = [c for c in want if c in cols]
