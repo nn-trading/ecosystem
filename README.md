@@ -1,4 +1,4 @@
-﻿Ecosystem AI
+Ecosystem AI
 
 Overview
 - Multi-agent ecosystem with event bus and SQLite-backed EventLog

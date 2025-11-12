@@ -1,4 +1,4 @@
-﻿Ecosystem AI status (ASCII-only)
+Ecosystem AI status (ASCII-only)
 
 Location
 - Repo: C:\bots\ecosys

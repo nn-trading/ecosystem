@@ -45,6 +45,7 @@ COMMITMSG.txt
 
 # Local configuration (do not commit)
 config/
+!config/llm.yaml
 
 # Ignore selected untracked dev helper scripts
 # Tracked dev tools remain; these patterns affect only new/untracked files
