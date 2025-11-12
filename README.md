@@ -76,3 +76,41 @@ Notes
 - Numeric switches in PowerShell scripts accept 0/1 for booleans
 - Logs are under logs\; pytest artifacts: logs\pytest_stdout.log, logs\pytest_stderr.log
 - Known benign warning: on Python versions lacking ctypes.wintypes.LRESULT, tools.winui_pid defines a safe fallback and import continues
+
+Memory & Summaries
+- Overview: periodic rollups condense recent EventLog activity into summaries table in var\events.db
+- One-off rollup and verification:
+  python dev\mem_rollup.py
+  python dev\mem_list.py
+  Expected: a line like "SUMMARIES_TOP3: [...]"
+- Schedule every 10 minutes (idempotent, PowerShell Task Scheduler):
+  $taskName = 'EcosysMemRollup'
+  $repo = "C:\bots\ecosys"
+  $action = New-ScheduledTaskAction -Execute 'powershell.exe' -Argument "-NoProfile -File `"$repo\dev\mem_rollup_job.ps1`""
+  $trigger = New-ScheduledTaskTrigger -Once (Get-Date).Date -RepetitionInterval (New-TimeSpan -Minutes 10) -RepetitionDuration ([TimeSpan]::MaxValue)
+  if (Get-ScheduledTask -TaskName $taskName -ErrorAction SilentlyContinue) {
+    Set-ScheduledTask -TaskName $taskName -Action $action -Trigger $trigger
+  } else {
+    Register-ScheduledTask -TaskName $taskName -Action $action -Trigger $trigger -Description "Ecosystem memory rollup every 10 minutes"
+  }
+- Logs: logs\mem_rollup.log captures each invocation result
+
+
+Memory & Summaries
+- Overview: periodic rollups condense recent EventLog activity into summaries table in var\events.db
+- One-off rollup and verification:
+  python dev\mem_rollup.py
+  python dev\mem_list.py
+  Expected: a line like "SUMMARIES_TOP3: [...]"
+- Schedule every 10 minutes (idempotent, PowerShell Task Scheduler):
+  $taskName = 'EcosysMemRollup'
+  $repo = "C:\bots\ecosys"
+  $action = New-ScheduledTaskAction -Execute 'powershell.exe' -Argument "-NoProfile -File `"$repo\dev\mem_rollup_job.ps1`""
+  $trigger = New-ScheduledTaskTrigger -Once (Get-Date).Date -RepetitionInterval (New-TimeSpan -Minutes 10) -RepetitionDuration ([TimeSpan]::MaxValue)
+  if (Get-ScheduledTask -TaskName $taskName -ErrorAction SilentlyContinue) {
+    Set-ScheduledTask -TaskName $taskName -Action $action -Trigger $trigger
+  } else {
+    Register-ScheduledTask -TaskName $taskName -Action $action -Trigger $trigger -Description "Ecosystem memory rollup every 10 minutes"
+  }
+- Logs: logs\mem_rollup.log captures each invocation result
+
