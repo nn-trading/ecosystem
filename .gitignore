@@ -73,3 +73,7 @@ api_key.txt
 reports/eventlog/*.txt
 reports/tests/*.txt
 
+
+# ignore LLM probe outputs
+reports/llm/*.txt
+
