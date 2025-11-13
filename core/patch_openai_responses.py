@@ -46,6 +46,16 @@ def _coerce_payload(kwargs):
     if not isinstance(body, dict): body = {}
     return body
 
+# Strict drop of unsupported fields for GPT-5 Responses API
+# Currently only temperature is known to cause 400s. Extend if needed.
+def _drop_unsupported_fields(d: dict) -> dict:
+    try:
+        if isinstance(d, dict):
+            d.pop("temperature", None)
+    except Exception:
+        pass
+    return d
+
 def _patch_request(self, method, url, **kwargs):
     try:
         if method.upper()=="POST" and "api.openai.com" in url:
@@ -59,8 +69,7 @@ def _patch_request(self, method, url, **kwargs):
                 if "max_tokens" in body:  new["max_output_tokens"] = body["max_tokens"]
                 if "tools" in body:       new["tools"] = body["tools"]
                 if "response_format" in body: new["response_format"]= body["response_format"]
-                new.pop("temperature", None)
-                kwargs["json"] = new
+                kwargs["json"] = _drop_unsupported_fields(new)
                 kwargs.pop("data", None)
             elif "/v1/responses" in url and model.startswith("gpt-5"):
                 # sanitize any direct Responses calls
@@ -87,8 +96,8 @@ def _patch_request(self, method, url, **kwargs):
                     new["tools"] = body["tools"]
                 if isinstance(body, dict) and "response_format" in body:
                     new["response_format"] = body["response_format"]
-                # finalize
-                kwargs["json"] = new
+                # finalize (strict drop of unsupported fields like temperature)
+                kwargs["json"] = _drop_unsupported_fields(new)
                 kwargs.pop("data", None)
     except Exception as e:
         _log({"ts":time.time(),"shim":"pre","err":repr(e)})
