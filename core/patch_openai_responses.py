@@ -121,7 +121,13 @@ def _patch_request(self, method, url, **kwargs):
                                     text_out += p.get("text", "")
                     elif isinstance(parts, str):
                         text_out = parts
-                    patched = {"choices":[{"message":{"role":"assistant","content": text_out}}]}
+                    patched = {
+                        "id": data.get("id"),
+                        "object": "chat.completion",
+                        "model": data.get("model") or (model or ""),
+                        "choices": [{"message": {"role": "assistant", "content": text_out}}],
+                        "via_responses": True,
+                    }
                     resp._content = json.dumps(patched).encode("utf-8")
                     resp.headers["Content-Type"] = "application/json"
                 except Exception as e:

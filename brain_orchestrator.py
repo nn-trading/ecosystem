@@ -63,11 +63,45 @@ def call_chat(messages, temperature=0.2):
         headers['Referer'] = os.environ.get('OPENROUTER_HTTP_REFERER','https://github.com/nn-trading/ecosystem')
         headers['X-Title'] = os.environ.get('OPENROUTER_X_TITLE','ecosystem-ai')
     body = {'model': OPENAI_MODEL, 'messages': messages, 'temperature': temperature}
-    r = requests.post(url, headers=headers, data=json.dumps(body), timeout=120)
-    r.raise_for_status()
-    data = r.json()
-    msg = data.get('choices', [{}])[0].get('message', {}).get('content') or ''
-    return msg, data
+
+    timeout = int(os.environ.get('BRAIN_CHAT_TIMEOUT', '120'))
+    max_retries = int(os.environ.get('BRAIN_CHAT_RETRIES', '2'))
+    backoff = float(os.environ.get('BRAIN_CHAT_BACKOFF', '2.0'))
+
+    last_exc = None
+    for attempt in range(max_retries + 1):
+        try:
+            r = requests.post(url, headers=headers, data=json.dumps(body), timeout=timeout)
+            r.raise_for_status()
+            data = r.json()
+            msg = data.get('choices', [{}])[0].get('message', {}).get('content') or ''
+            return msg, data
+        except requests.exceptions.ReadTimeout as e:
+            last_exc = e
+        except requests.exceptions.RequestException as e:
+            # Retry on transient 5xx and network hiccups; let others bubble immediately
+            status = getattr(getattr(e, 'response', None), 'status_code', None)
+            if status and status >= 500 and attempt < max_retries:
+                last_exc = e
+            else:
+                raise
+        # simple linear backoff between retries
+        try:
+            time.sleep(backoff * (attempt + 1))
+        except Exception:
+            pass
+
+    # Retries exhausted: log a lightweight audit line (keeps 4xx log behavior intact)
+    try:
+        llm_dir = os.path.join(REPORTS, 'llm')
+        os.makedirs(llm_dir, exist_ok=True)
+        with open(os.path.join(llm_dir, 'responses_debug.jsonl'), 'a', encoding='utf-8') as f:
+            f.write(json.dumps({'ts': time.time(), 'event': 'retry_exhausted', 'url': url, 'retries': max_retries, 'timeout': timeout}) + '\n')
+    except Exception:
+        pass
+    if last_exc:
+        raise last_exc
+    raise RuntimeError('call_chat failed without exception')
 
 def extract_json(s):
     m = re.search(r'\{[\s\S]*\}', s)
@@ -205,6 +239,9 @@ def main():
 
         if not plan_obj or 'actions' not in plan_obj:
             observations.append({'step': step, 'ok': False, 'error': 'bad or missing JSON/actions', 'assistant_reply': reply})
+            # Always write a log snapshot even when the assistant reply is invalid
+            with open(log_json, 'w', encoding='utf-8') as f:
+                json.dump({'goal': args.goal, 'steps': all_steps, 'observations': observations}, f, ensure_ascii=False, indent=2)
             messages.append({'role':'user','content':'Your last message was not valid JSON per the schema. Please resend strictly JSON.'})
             continue
 
