@@ -77,3 +77,19 @@ reports/tests/*.txt
 # ignore LLM probe outputs
 reports/llm/*.txt
 
+
+dev/apply_gpt_oss.ps1
+
+dev/automerge_openrouter_probe.ps1
+
+dev/ensure_gpt_oss_import_and_probe.ps1
+
+dev/mem_rollup_setup.ps1
+
+dev/merge_to_main.ps1
+
+dev/pr_merge_health.ps1
+
+mem_setup.ps1
+
+scripts/run_probes.ps1
