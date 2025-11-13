@@ -1,0 +1,129 @@
+﻿import os, json, time
+from requests.sessions import Session
+from requests import RequestException
+
+LOG = r"C:\bots\ecosys\reports\llm\responses_debug.jsonl"
+def _log(obj):
+    try:
+        with open(LOG, "a", encoding="utf-8") as f: f.write(json.dumps(obj, ensure_ascii=False) + "\n")
+    except Exception: pass
+
+_orig_request = Session.request
+
+def _typed_messages(msgs):
+    out = []
+    allowed = {"input_text","input_image","output_text","refusal","input_file","computer_screenshot","summary_text"}
+    for m in (msgs or []):
+        role = m.get("role", "user")
+        content = m.get("content", "")
+        parts = []
+        if isinstance(content, str):
+            parts = [{"type": "input_text", "text": content}]
+        elif isinstance(content, list):
+            for p in content:
+                if isinstance(p, dict):
+                    t = p.get("type")
+                    if t == "text":
+                        parts.append({"type": "input_text", "text": p.get("text", "")})
+                    elif t in allowed:
+                        parts.append(p)
+                    elif "text" in p:
+                        parts.append({"type": "input_text", "text": p.get("text", "")})
+                    else:
+                        parts.append({"type": "input_text", "text": str(p)})
+                else:
+                    parts.append({"type": "input_text", "text": str(p)})
+        else:
+            parts = [{"type": "input_text", "text": str(content)}]
+        out.append({"role": role, "content": parts})
+    return out
+
+def _coerce_payload(kwargs):
+    body = kwargs.get("json")
+    if body is None and "data" in kwargs and isinstance(kwargs["data"], (str, bytes)):
+        try: body = json.loads(kwargs["data"])
+        except Exception: body = None
+    if not isinstance(body, dict): body = {}
+    return body
+
+def _patch_request(self, method, url, **kwargs):
+    try:
+        if method.upper()=="POST" and "api.openai.com" in url:
+            body = _coerce_payload(kwargs)
+            model = body.get("model") or os.getenv("OPENAI_MODEL") or ""
+            # Upgrade legacy Chat Completions -> Responses for GPT-5*
+            if "/v1/chat/completions" in url and model.startswith("gpt-5"):
+                url = "https://api.openai.com/v1/responses"
+                msg = _typed_messages(body.get("messages") or [])
+                new = {"model": model, "input": msg}
+                if "max_tokens" in body:  new["max_output_tokens"] = body["max_tokens"]
+                if "tools" in body:       new["tools"] = body["tools"]
+                if "response_format" in body: new["response_format"]= body["response_format"]
+                new.pop("temperature", None)
+                kwargs["json"] = new
+                kwargs.pop("data", None)
+            elif "/v1/responses" in url and model.startswith("gpt-5"):
+                # sanitize any direct Responses calls
+                new = {}
+                # model
+                new["model"] = model
+                # input/messages coercion
+                if "messages" in body and "input" not in body:
+                    new["input"] = _typed_messages(body.get("messages") or [])
+                else:
+                    inp = body.get("input")
+                    if isinstance(inp, str):
+                        new["input"] = [{"role":"user","content":[{"type":"input_text","text": inp}]}]
+                    elif isinstance(inp, list):
+                        new["input"] = _typed_messages(inp)
+                    else:
+                        new["input"] = [{"role":"user","content":[{"type":"input_text","text": ""}]}]
+                # allowed optional fields
+                if isinstance(body, dict) and "max_tokens" in body:
+                    new["max_output_tokens"] = body["max_tokens"]
+                if isinstance(body, dict) and "max_output_tokens" in body:
+                    new["max_output_tokens"] = body["max_output_tokens"]
+                if isinstance(body, dict) and "tools" in body:
+                    new["tools"] = body["tools"]
+                if isinstance(body, dict) and "response_format" in body:
+                    new["response_format"] = body["response_format"]
+                # finalize
+                kwargs["json"] = new
+                kwargs.pop("data", None)
+    except Exception as e:
+        _log({"ts":time.time(),"shim":"pre","err":repr(e)})
+
+    resp = _orig_request(self, method, url, **kwargs)
+    try:
+        if resp.status_code < 400:
+            # For GPT-5 Responses, convert to chat-completions-like payload for backward compat
+            if "api.openai.com" in (getattr(resp, 'url', '') or '') and "/v1/responses" in (getattr(resp, 'url', '') or '') and (model or '').startswith("gpt-5"):
+                try:
+                    data = resp.json()
+                    parts = data.get("content") or data.get("output") or []
+                    text_out = ""
+                    if isinstance(parts, list):
+                        for p in parts:
+                            if isinstance(p, dict):
+                                t = p.get("type")
+                                if t in ("output_text","input_text","summary_text") and "text" in p:
+                                    text_out += p.get("text", "")
+                    elif isinstance(parts, str):
+                        text_out = parts
+                    patched = {"choices":[{"message":{"role":"assistant","content": text_out}}]}
+                    resp._content = json.dumps(patched).encode("utf-8")
+                    resp.headers["Content-Type"] = "application/json"
+                except Exception as e:
+                    _log({"ts":time.time(),"shim":"post_ok","warn":"patch_resp_failed","err":repr(e)})
+        else:
+            body = _coerce_payload(kwargs)
+            text = resp.text[:4000]
+            _log({"ts":time.time(),"url":url,"status":resp.status_code,"model":(body.get("model") if isinstance(body,dict) else None),"req":body,"resp":text})
+    except Exception as e:
+        _log({"ts":time.time(),"shim":"post","err":repr(e)})
+    return resp
+
+# Apply once
+if not getattr(Session, "_gpt5_responses_shim", False):
+    Session.request = _patch_request
+    Session._gpt5_responses_shim = True
