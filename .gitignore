@@ -98,3 +98,5 @@ scripts/run_probes.ps1
 /oh_*.ps1
 /scripts/health_report.ps1
 
+
+tmp_*.ps1

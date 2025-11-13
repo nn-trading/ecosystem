@@ -127,9 +127,13 @@ def _patch_request(self, method, url, **kwargs):
                     def _collect_text(pt):
                         nonlocal text_out
                         if isinstance(pt, dict):
+                            # Recurse into nested message/content structures
+                            if isinstance(pt.get("content"), list):
+                                for q in pt.get("content"):
+                                    _collect_text(q)
                             t = pt.get("type")
-                            # common typed content entries
-                            if t in ("output_text","input_text","summary_text") and "text" in pt:
+                            # common typed content entries and generic text holders
+                            if t in ("output_text","input_text","summary_text","text") and "text" in pt:
                                 text_out += pt.get("text", "")
                             elif "text" in pt and isinstance(pt["text"], str):
                                 text_out += pt["text"]
