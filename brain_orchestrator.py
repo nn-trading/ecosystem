@@ -229,6 +229,9 @@ def main():
     observations, all_steps = [], []
     ts = datetime.now().strftime('%Y%m%d_%H%M%S')
     log_json = os.path.join(REPORTS, f'actions_{ts}.json')
+    # Pre-create log skeleton so the path exists immediately
+    with open(log_json, 'w', encoding='utf-8') as f:
+        json.dump({'goal': args.goal, 'steps': [], 'observations': []}, f, ensure_ascii=False, indent=2)
 
     for step in range(1, args.max_iters+1):
         if observations:

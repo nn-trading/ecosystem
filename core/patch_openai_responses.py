@@ -5,8 +5,11 @@ from requests import RequestException
 LOG = r"C:\bots\ecosys\reports\llm\responses_debug.jsonl"
 def _log(obj):
     try:
-        with open(LOG, "a", encoding="utf-8") as f: f.write(json.dumps(obj, ensure_ascii=False) + "\n")
-    except Exception: pass
+        os.makedirs(os.path.dirname(LOG), exist_ok=True)
+        with open(LOG, "a", encoding="utf-8") as f:
+            f.write(json.dumps(obj, ensure_ascii=False) + "\n")
+    except Exception:
+        pass
 
 _orig_request = Session.request
 
@@ -111,14 +114,37 @@ def _patch_request(self, method, url, **kwargs):
             if "api.openai.com" in (getattr(resp, 'url', '') or '') and "/v1/responses" in (getattr(resp, 'url', '') or '') and (model or '').startswith("gpt-5"):
                 try:
                     data = resp.json()
-                    parts = data.get("content") or data.get("output") or []
+                    # Responses may return either `content` (list of typed parts),
+                    # or a chat-like `output` with `message` having `content` list.
+                    parts = data.get("content")
+                    if not parts and isinstance(data.get("output"), dict):
+                        # OpenAI Responses often nests under output.message.content
+                        msg = data.get("output", {}).get("message", {})
+                        parts = msg.get("content")
+                    if not parts:
+                        parts = data.get("output") or []
                     text_out = ""
+                    def _collect_text(pt):
+                        nonlocal text_out
+                        if isinstance(pt, dict):
+                            t = pt.get("type")
+                            # common typed content entries
+                            if t in ("output_text","input_text","summary_text") and "text" in pt:
+                                text_out += pt.get("text", "")
+                            elif "text" in pt and isinstance(pt["text"], str):
+                                text_out += pt["text"]
+                        elif isinstance(pt, str):
+                            text_out += pt
                     if isinstance(parts, list):
                         for p in parts:
-                            if isinstance(p, dict):
-                                t = p.get("type")
-                                if t in ("output_text","input_text","summary_text") and "text" in p:
-                                    text_out += p.get("text", "")
+                            _collect_text(p)
+                    elif isinstance(parts, dict):
+                        # some variants wrap content as dict with nested arrays
+                        for v in parts.values():
+                            if isinstance(v, list):
+                                for p in v: _collect_text(p)
+                            else:
+                                _collect_text(v)
                     elif isinstance(parts, str):
                         text_out = parts
                     patched = {
