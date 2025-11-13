@@ -47,11 +47,13 @@ def _coerce_payload(kwargs):
     return body
 
 # Strict drop of unsupported fields for GPT-5 Responses API
-# Currently only temperature is known to cause 400s. Extend if needed.
+# Remove fields that are not accepted by /v1/responses for gpt-5 models.
+# Extend this list as needed based on server errors observed in debug logs.
 def _drop_unsupported_fields(d: dict) -> dict:
     try:
         if isinstance(d, dict):
-            d.pop("temperature", None)
+            for k in ("temperature","top_p","top_k","n","logprobs"):
+                d.pop(k, None)
     except Exception:
         pass
     return d

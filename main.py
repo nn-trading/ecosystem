@@ -1,3 +1,4 @@
+﻿import core.patch_openai_responses  # monkey-patch Chat->Responses for gpt-5
 # C:\bots\ecosys\main.py
 from __future__ import annotations
 import os, asyncio, textwrap, json, datetime, sqlite3, time
@@ -723,6 +724,7 @@ if __name__ == "__main__":
         asyncio.run(main())
     except KeyboardInterrupt:
         pass
+
 
 
 

@@ -93,3 +93,8 @@ dev/pr_merge_health.ps1
 mem_setup.ps1
 
 scripts/run_probes.ps1
+
+# Ignore ad-hoc OpenHands helper scripts and local health script
+/oh_*.ps1
+/scripts/health_report.ps1
+

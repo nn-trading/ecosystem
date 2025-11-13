@@ -1,3 +1,4 @@
+﻿import core.patch_openai_responses  # ensure GPT-5 Responses patch
 import os, sys, json, time, argparse, subprocess, textwrap, re
 from datetime import datetime
 import requests
@@ -246,3 +247,4 @@ def main():
 
 if __name__ == '__main__':
     main()
+
